@@ -799,3 +799,771 @@ body {
 }
 
 
+
+/* 品牌與頂部導航升級 */
+.brand-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.brand-tag {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+/* 程式碼面板快速複製按鈕 */
+.copy-code-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-code-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 浮動回到頂部按鈕 */
+.back-to-top-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease-in-out;
+  z-index: 999;
+}
+
+.back-to-top-btn.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top-btn:hover {
+  background: var(--primary);
+  color: #0f172a;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(56, 189, 248, 0.4);
+}
+
+/* ===================================================
+   互動邏輯實驗室 (Interactive Logic Lab) 專用樣式
+   =================================================== */
+
+/* 1. 站點導航切換列 */
+.station-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.station-nav-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.station-nav-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lab-station-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lab-station-pill:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.lab-station-pill.active {
+  background: var(--primary);
+  color: #0f172a;
+  border-color: var(--primary);
+}
+
+/* 簡介與規則卡片 */
+.interactive-intro-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.booth-rule-chips {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rule-chip {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+}
+
+.chip-sub {
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.chip-add {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.chip-shift {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* 控制項排版 */
+.booth-controls-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.controls-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.ctrl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.input-ctrl {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-ctrl:focus {
+  border-color: var(--primary);
+}
+
+.step-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.step-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.step-badge-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+}
+
+.step-progress-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* 暫存器視覺化監控看板 */
+.reg-visual-board {
+  background: #090d16;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.reg-board-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reg-banks-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 110px;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .reg-banks-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reg-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.reg-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.reg-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.reg-tag {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.reg-cells-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 0.25rem 0;
+}
+
+/* 暫存器位元單元格 */
+.bit-cell {
+  width: 32px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-main);
+  transition: all 0.25s;
+}
+
+.bit-sign {
+  border-color: #fb7185;
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.1);
+}
+
+.bit-q0 {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.bit-qprev {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.18);
+  font-weight: 800;
+}
+
+.bit-highlight {
+  border-color: var(--primary);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  transform: scale(1.05);
+}
+
+/* 動作檢查條 */
+.action-inspect-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.inspect-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.inspect-lbl {
+  color: var(--text-muted);
+}
+
+.inspect-desc {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  flex: 1 1 100%;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+/* 追蹤歷史表格 */
+.booth-history-section {
+  margin-top: 1.5rem;
+}
+
+.history-title {
+  font-size: 0.95rem;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.booth-trace-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.booth-trace-table th {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  padding: 0.65rem 0.9rem;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.booth-trace-table td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+
+.booth-table-row:hover td {
+  background: var(--bg-card-hover);
+}
+
+.booth-table-row.row-active td {
+  background: rgba(56, 189, 248, 0.12);
+  border-top: 1px solid var(--primary);
+  border-bottom: 1px solid var(--primary);
+}
+
+.booth-table-row.row-active td:first-child {
+  border-left: 3px solid var(--primary);
+}
+
+/* 投影片釋疑專欄 */
+.slide-clarify-box {
+  background: var(--bg-secondary);
+  border-left: 4px solid #f59e0b;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1.15rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.clarify-title {
+  font-size: 0.95rem;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.clarify-list {
+  margin-left: 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.clarify-list li {
+  margin-bottom: 0.4rem;
+}
+
+/* 2. 浮點數拆解器樣式 */
+.fp-ctrl-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.fp-input-row {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.fp-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.input-with-btn {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fp-presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.preset-lbl {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.fp-preset-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fp-preset-pill:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* 32 位元磁磚面板 */
+.fp-bitboard-wrapper {
+  background: #090d16;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.bitboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.fp-tiles-flex {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.fp-bit-col, .fp-bit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fp-bit-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.fp-bit-row {
+  display: flex;
+  gap: 3px;
+}
+
+.fp-bit-btn {
+  width: 28px;
+  height: 36px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fp-bit-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.fp-bit-btn.bit-sign {
+  border-color: #fb7185;
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.15);
+}
+
+.fp-bit-btn.bit-exp {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.fp-bit-btn.bit-frac {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* 診斷卡片網格 */
+.fp-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.fp-diag-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.diag-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.diag-body {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.fp-formula-result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.formula-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.formula-math-box {
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 3. 遞迴堆疊追蹤器樣式 */
+.stack-step-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.stack-detail-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.stack-title-heading {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.35rem;
+}
+
+.stack-desc-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.stack-visual-wrapper {
+  background: #090d16;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.stack-column-header, .stack-column-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  padding: 0.4rem 0.5rem;
+}
+
+.stack-column-header {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
+}
+
+.stack-column-footer {
+  border-top: 1px solid var(--border-color);
+  margin-top: 0.75rem;
+}
+
+.stack-slots-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 120px;
+}
+
+.stack-slot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: var(--font-mono);
+  transition: all 0.25s;
+}
+
+.slot-parent-frame {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid #334155;
+  color: #94a3b8;
+}
+
+.slot-current-frame {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid #38bdf8;
+  color: #f8fafc;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.slot-addr {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.stack-rule-callout {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.stack-rule-callout h4 {
+  font-size: 0.95rem;
+  color: #c084fc;
+  margin-bottom: 0.5rem;
+}

@@ -15,16 +15,16 @@
 
   <!-- 頂部導航欄 -->
   <header class="navbar">
-    <div>
+    <div class="brand-container">
       <div class="brand-title">
-        <span>⚡</span> CO3020 計算機組織：互動式動態題庫與轉譯實驗室
+        <span class="brand-tag">CO3020</span> 計算機組織：互動式動態題庫與轉譯實驗室
       </div>
       <div class="brand-subtitle">
-        完整收錄 Chapter 1、2、3 投影片精華、作業一與作業二全真解析、動態計算題求解器與 C/MIPS 雙向轉譯特訓
+        收錄 Chapter 1、2、3 投影片精華、作業一與作業二全真解析、動態計算題求解器與 C / MIPS 雙向轉譯特訓
       </div>
     </div>
     <div class="nav-controls">
-      <button id="themeToggleBtn" class="theme-toggle-btn">☀️ 切換淺色模式</button>
+      <button id="themeToggleBtn" class="theme-toggle-btn">切換主題色彩</button>
     </div>
   </header>
 
@@ -33,12 +33,13 @@
     
     <!-- 標籤導航欄 -->
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="tabCheatSheet">📖 重點精華與公式速查</button>
-      <button class="tab-btn" data-tab="tabCalcArena">🎯 動態計算題庫 (隨機出題 & 驗證)</button>
-      <button class="tab-btn" data-tab="tabTranslation">⚙️ C / MIPS 雙向轉譯特訓中心 (18 大題型)</button>
-      <button class="tab-btn" data-tab="tabAssignments">🏆 作業實戰解析 (作業一 & 作業二)</button>
-      <button class="tab-btn" data-tab="tabMockExam">📝 全真模擬隨機測驗</button>
-      <button class="tab-btn" data-tab="tabExpansionGuide">🚀 新增講義擴充指南</button>
+      <button class="tab-btn active" data-tab="tabCheatSheet">重點精華與公式速查</button>
+      <button class="tab-btn" data-tab="tabCalcArena">動態計算題庫（隨機出題與驗證）</button>
+      <button class="tab-btn" data-tab="tabTranslation">C / MIPS 雙向轉譯特訓中心（18 大題型）</button>
+      <button class="tab-btn" data-tab="tabInteractiveLab">互動邏輯實驗室（布斯、浮點數與堆疊）</button>
+      <button class="tab-btn" data-tab="tabAssignments">作業實戰解析（作業一與作業二）</button>
+      <button class="tab-btn" data-tab="tabMockExam">全真模擬隨機測驗</button>
+      <button class="tab-btn" data-tab="tabExpansionGuide">講義擴充指南</button>
     </nav>
 
     <!-- 標籤頁 1：重點精華與公式手冊 -->
@@ -57,27 +58,32 @@
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
         <div class="filter-bar" id="transFilterContainer" style="margin-bottom: 0;"></div>
         <div class="mode-switch-bar" style="margin-bottom: 0;">
-          <button class="mode-btn active" id="btnModeStudy">👁️ 對照研讀模式</button>
-          <button class="mode-btn" id="btnModeQuiz">🧠 盲測默寫特訓模式</button>
+          <button class="mode-btn active" id="btnModeStudy">對照研讀模式</button>
+          <button class="mode-btn" id="btnModeQuiz">盲測默寫特訓模式</button>
         </div>
       </div>
       <div id="translationLabContainer"></div>
     </section>
 
-    <!-- 標籤頁 4：作業全真解析專區 -->
+    <!-- 標籤頁 4：互動邏輯實驗室 (四大核心模擬器) -->
+    <section id="tabInteractiveLab" class="tab-content">
+      <div id="interactiveLabContainer"></div>
+    </section>
+
+    <!-- 標籤頁 5：作業全真解析專區 -->
     <section id="tabAssignments" class="tab-content">
       <div id="assignmentsLabContainer"></div>
     </section>
 
-    <!-- 標籤頁 5：全真模擬隨機測驗 -->
+    <!-- 標籤頁 6：全真模擬隨機測驗 -->
     <section id="tabMockExam" class="tab-content">
-      <div class="card" style="text-align: center; padding: 2rem;">
-        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);">📝 計算機組織全真動態模擬考</h2>
-        <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto 1.5rem auto;">
+      <div class="card" style="text-align: center; padding: 2.5rem;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);">計算機組織全真動態模擬考</h2>
+        <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto 1.5rem auto; line-height: 1.7;">
           系統將自 Chapter 1、Chapter 2 與 Chapter 3 所有已收錄題型中隨機抽取 5 道計算題並動態產生全新數值。作答完畢後一鍵提交，系統將即時評分、標註錯題並自動展開逐步推導詳解。
         </p>
         <button id="startExamBtn" class="action-btn btn-primary" style="font-size: 1rem; padding: 0.75rem 1.75rem;">
-          🚀 開始動態抽題模擬考
+          開始動態抽題模擬考
         </button>
       </div>
 
@@ -86,17 +92,20 @@
 
       <div style="text-align: center; margin-top: 1.5rem;">
         <button id="submitExamBtn" class="action-btn btn-primary" style="display: none; font-size: 1rem; padding: 0.75rem 2rem;">
-          📊 繳交試卷並計算成績
+          繳交試卷並計算成績
         </button>
       </div>
     </section>
 
-    <!-- 標籤頁 6：講義擴充指南 -->
+    <!-- 標籤頁 7：講義擴充指南 -->
     <section id="tabExpansionGuide" class="tab-content">
       <div id="expansionGuideContainer"></div>
     </section>
 
   </main>
+
+  <!-- 浮動回到頂部按鈕 -->
+  <button id="backToTopBtn" class="back-to-top-btn" title="回到頂部" aria-label="回到頂部">↑</button>
 
   <!-- 引入資料與核心邏輯模組 (無模組化限制，本機直接雙擊 index.html 即可正常運行) -->
   <script src="js/engine/solver.js"></script>
@@ -104,6 +113,7 @@
   <script src="js/data/chapter2.js"></script>
   <script src="js/data/chapter3.js"></script>
   <script src="js/data/translations.js"></script>
+  <script src="js/engine/interactive_lab.js"></script>
   <script src="js/app.js"></script>
 
 </body>

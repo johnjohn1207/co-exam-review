@@ -8,9 +8,11 @@ document.addEventListener("DOMContentLoaded", function() {
   renderCheatSheet();
   renderCalculationArena();
   renderTranslationLab();
+  renderInteractiveLab();
   renderAssignmentsLab();
   initMockExam();
   renderExpansionGuide();
+  initBackToTop();
 });
 
 // 1. 主題切換 (深色 / 淺色)
@@ -30,7 +32,7 @@ function initTheme() {
 }
 
 function updateThemeBtnText(btn, theme) {
-  btn.textContent = theme === "light" ? "🌙 切換深色模式" : "☀️ 切換淺色模式";
+  btn.textContent = theme === "light" ? "切換深色主題" : "切換淺色主題";
 }
 
 // 2. 標籤頁切換
@@ -70,7 +72,7 @@ function renderCheatSheet() {
           <span class="badge badge-primary">${chap.shortTitle}</span>
         </div>
         
-        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.25rem 0 0.75rem 0;">📐 核心公式速查表</h3>
+        <h3 style="font-size: 1rem; color: var(--primary); margin: 1.25rem 0 0.75rem 0;">核心公式速查表</h3>
         <div class="formula-grid">
     `;
 
@@ -83,7 +85,7 @@ function renderCheatSheet() {
       `;
     });
 
-    html += `</div><h3 style="font-size: 1rem; color: var(--primary); margin: 1.25rem 0 0.75rem 0;">📖 重點知識樹整理</h3>`;
+    html += `</div><h3 style="font-size: 1rem; color: var(--primary); margin: 1.25rem 0 0.75rem 0;">重點知識樹整理</h3>`;
 
     chap.summary.forEach((sec, sIdx) => {
       html += `
@@ -123,7 +125,7 @@ function renderCalculationArena() {
     });
   });
 
-  filterHtml += `<button class="filter-btn" data-filter="hw1">🔥 作業一必考題型</button>`;
+  filterHtml += `<button class="filter-btn" data-filter="hw1">作業一必考題型</button>`;
   filterContainer.innerHTML = filterHtml;
 
   // 綁定篩選器點擊
@@ -180,12 +182,12 @@ function refreshCardContent(card, problemDef) {
       <div>
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
           <h3 class="card-title">${instance.title}</h3>
-          ${isHw1 ? '<span class="tag-badge tag-hw1">🔥 作業一高頻必考</span>' : ''}
+          ${isHw1 ? '<span class="tag-badge tag-hw1">作業一高頻必考</span>' : ''}
         </div>
         <span style="font-size: 0.8rem; color: var(--text-muted);">類別：${instance.category}</span>
       </div>
       <button class="action-btn btn-secondary refresh-btn" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
-        🎲 換一題 (隨機數值)
+        換一題（隨機數值）
       </button>
     </div>
 
@@ -200,7 +202,7 @@ function refreshCardContent(card, problemDef) {
         <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">${instance.solution.unit || ""}</span>
       </div>
       <button class="action-btn btn-primary verify-btn">
-        ✅ 送出驗證
+        送出驗證
       </button>
     </div>
 
@@ -208,7 +210,7 @@ function refreshCardContent(card, problemDef) {
 
     <div class="solution-box">
       <div class="solution-toggle">
-        <span>📖 查看詳細解題步驟與推導</span>
+        <span>查看詳細解題步驟與推導</span>
         <span class="toggle-icon">▼</span>
       </div>
       <div class="solution-content">
@@ -229,7 +231,7 @@ function refreshCardContent(card, problemDef) {
   verifyBtn.addEventListener("click", function() {
     const res = window.CO_SOLVER.verify(problemDef.id, inputEl.value);
     feedbackEl.className = `feedback-msg show ${res.isCorrect ? "feedback-success" : "feedback-error"}`;
-    feedbackEl.innerHTML = `<strong>${res.isCorrect ? "✅ 正確" : "❌ 未通過"}</strong>：${res.message}`;
+    feedbackEl.innerHTML = `<strong>${res.isCorrect ? "驗證正確" : "未通過"}</strong>：${res.message}`;
     if (!res.isCorrect) {
       solutionContent.classList.add("open");
       toggleIcon.textContent = "▲";
@@ -283,8 +285,8 @@ function renderTranslationLab() {
 
   filterContainer.innerHTML = `
     <button class="filter-btn active" data-filter="all">全部 (${list.length})</button>
-    <button class="filter-btn" data-filter="hw1">🔥 作業一必考 (${list.filter(x => x.title.includes('作業一')).length})</button>
-    <button class="filter-btn" data-filter="hw2">🌟 作業二核心 (${list.filter(x => x.title.includes('作業二')).length})</button>
+    <button class="filter-btn" data-filter="hw1">作業一必考 (${list.filter(x => x.title.includes('作業一')).length})</button>
+    <button class="filter-btn" data-filter="hw2">作業二核心 (${list.filter(x => x.title.includes('作業二')).length})</button>
     <button class="filter-btn" data-filter="C -> MIPS">C 轉 MIPS (${list.filter(x => x.direction === "C -> MIPS").length})</button>
     <button class="filter-btn" data-filter="MIPS -> C">MIPS 轉 C (${list.filter(x => x.direction === "MIPS -> C").length})</button>
   `;
@@ -320,8 +322,8 @@ function renderTranslationLab() {
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
               <h3 class="card-title">${item.title}</h3>
-              ${isHw1 ? '<span class="tag-badge tag-hw1">🔥 作業一必考</span>' : ''}
-              ${isHw2 ? '<span class="tag-badge tag-hw2">🌟 作業二核心</span>' : ''}
+              ${isHw1 ? '<span class="tag-badge tag-hw1">作業一必考</span>' : ''}
+              ${isHw2 ? '<span class="tag-badge tag-hw2">作業二核心</span>' : ''}
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${item.description}</p>
           </div>
@@ -335,16 +337,16 @@ function renderTranslationLab() {
         <div class="quiz-container-area" style="display: none;">
           <div class="quiz-attempt-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary);">✍️ 盲測默寫特訓區：請嘗試寫出對應的 ${item.direction === 'C -> MIPS' ? 'MIPS 組合語言' : 'C 語言'} 程式碼</span>
+              <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary);">盲測默寫特訓區：請嘗試寫出對應的 ${item.direction === 'C -> MIPS' ? 'MIPS 組合語言' : 'C 語言'} 程式碼</span>
               <span style="font-size: 0.8rem; color: var(--text-muted);">（輸入後點擊核對解答）</span>
             </div>
             <textarea class="quiz-textarea" placeholder="在此處鍵入您的作答代碼...例如：&#10;addi $sp, $sp, -4&#10;sw   $s0, 0($sp)..."></textarea>
             <div class="quiz-controls">
-              <button class="action-btn btn-secondary btn-show-hint">💡 查看解題提示</button>
-              <button class="action-btn btn-primary btn-reveal-ans">🔓 核對解答與逐行剖析</button>
+              <button class="action-btn btn-secondary btn-show-hint">查看解題提示</button>
+              <button class="action-btn btn-primary btn-reveal-ans">核對解答與逐行剖析</button>
             </div>
             <div class="hint-box">
-              <strong>💡 解題關鍵提示：</strong>${item.hint || "請注意暫存器配置約定、Word 邊界對齊與分支反轉。"}
+              <strong>解題關鍵提示：</strong>${item.hint || "請注意暫存器配置約定、Word 邊界對齊與分支反轉。"}
             </div>
           </div>
         </div>
@@ -353,13 +355,15 @@ function renderTranslationLab() {
         <div class="code-comparison-grid">
           <div class="code-panel panel-c">
             <div class="code-panel-header">
-              <span>💻 C / C++ 程式原始碼</span>
+              <span>C / C++ 程式原始碼</span>
+              <button class="copy-code-btn" onclick="copyToClipboard(this)">複製代碼</button>
             </div>
             <pre class="code-content">${escapeHtml(item.cCode)}</pre>
           </div>
           <div class="code-panel panel-mips">
             <div class="code-panel-header">
-              <span>⚙️ MIPS 組合語言對應實作</span>
+              <span>MIPS 組合語言對應實作</span>
+              <button class="copy-code-btn" onclick="copyToClipboard(this)">複製代碼</button>
             </div>
             <pre class="code-content" style="color: #4ade80;">${escapeHtml(item.mipsCode)}</pre>
           </div>
@@ -367,7 +371,7 @@ function renderTranslationLab() {
 
         <div class="solution-box details-box">
           <div class="solution-toggle">
-            <span>🔍 逐行轉譯對應解析與暫存器追蹤 (Line-by-Line Breakdown)</span>
+            <span>逐行轉譯對應解析與暫存器追蹤 (Line-by-Line Breakdown)</span>
             <span class="toggle-arrow">▼</span>
           </div>
           <div class="solution-content">
@@ -391,7 +395,7 @@ function renderTranslationLab() {
         </div>
 
         <div class="pitfall-callout details-pitfall">
-          <div class="pitfall-title">⚠️ 常見考試易失分陷阱剖析</div>
+          <div class="pitfall-title">常見考試易失分陷阱剖析</div>
           <div>${item.pitfalls}</div>
         </div>
       </div>
@@ -430,7 +434,7 @@ function renderTranslationLab() {
         if (targetPanel) targetPanel.style.display = "block";
         if (detailsBox) detailsBox.style.display = "block";
         if (detailsPitfall) detailsPitfall.style.display = "block";
-        revealBtn.textContent = "✅ 已展開權威解答";
+        revealBtn.textContent = "已展開權威解答";
         revealBtn.classList.remove("btn-primary");
         revealBtn.classList.add("btn-secondary");
       });
@@ -469,7 +473,7 @@ function applyTransMode() {
       if (detailsBox) detailsBox.style.display = "none";
       if (detailsPitfall) detailsPitfall.style.display = "none";
       if (revealBtn) {
-        revealBtn.textContent = "🔓 核對解答與逐行剖析";
+        revealBtn.textContent = "核對解答與逐行剖析";
         revealBtn.classList.add("btn-primary");
         revealBtn.classList.remove("btn-secondary");
       }
@@ -487,7 +491,7 @@ function renderAssignmentsLab() {
     <div class="card assignment-section">
       <div class="card-header">
         <div>
-          <h2 class="card-title" style="color: var(--primary);">🔥 Assignment #1 全真題型核心解構與期中考點</h2>
+          <h2 class="card-title" style="color: var(--primary);">Assignment #1 全真題型核心解構與期中考點</h2>
           <span style="font-size: 0.85rem; color: var(--text-muted);">涵蓋 Chapter 1 & 2：老師特別交代作業一題型為期中考試最高頻命中題型！</span>
         </div>
         <span class="tag-badge tag-hw1">HW1 必考專區</span>
@@ -585,7 +589,7 @@ function renderAssignmentsLab() {
     <div class="card assignment-section">
       <div class="card-header">
         <div>
-          <h2 class="card-title" style="color: #c084fc;">🌟 Assignment #2 遞迴費氏數列（Recursive Fibonacci in MIPS MARS）實戰指南</h2>
+          <h2 class="card-title" style="color: #c084fc;">Assignment #2 遞迴費氏數列（Recursive Fibonacci in MIPS MARS）實戰指南</h2>
           <span style="font-size: 0.85rem; color: var(--text-muted);">深入拆解：函式呼叫約定 (Calling Convention)、雙遞迴堆疊保護與 MARS 模擬器操作</span>
         </div>
         <span class="tag-badge tag-hw2">HW2 專題解析</span>
@@ -797,7 +801,7 @@ function initMockExam() {
     });
 
     window.CO_SOLVER.renderMath(examArea);
-    startBtn.textContent = "🔄 重新抽取測驗試卷";
+    startBtn.textContent = "重新抽取測驗試卷";
     examArea.scrollIntoView({ behavior: "smooth" });
   });
 
@@ -838,7 +842,7 @@ function renderExpansionGuide() {
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">🚀 系統擴充規範：如何無痛新增後續講義 (Chapter 4, Chapter 5...)</h2>
+        <h2 class="card-title">系統擴充規範：如何無痛新增後續講義 (Chapter 4, Chapter 5...)</h2>
         <span class="badge badge-success">開發者指南</span>
       </div>
 
@@ -887,7 +891,7 @@ window.CO_DATA.chapters.push({
       </div>
 
       <div class="pitfall-callout" style="background: var(--primary-light); border-left-color: var(--primary);">
-        <div class="pitfall-title" style="color: var(--primary);">✨ 全自動動態適配機制</div>
+        <div class="pitfall-title" style="color: var(--primary);">全自動動態適配機制</div>
         系統會自動將新章節整合至：<strong>導航篩選按鈕</strong>、<strong>重點公式總覽</strong>、<strong>動態出題引擎</strong> 與 <strong>全真模擬隨機測驗抽題庫</strong>，擴充工作在數分鐘內即可完成。
       </div>
     </div>
@@ -898,7 +902,7 @@ window.CO_DATA.chapters.push({
 function getAluSimulatorHtml() {
   return `
     <div class="alu-sim-container" id="aluSimulatorBox">
-      <div class="alu-sim-title">⚡ 互動式 1 位元 ALU 電路訊號模擬器 (Interactive 1-bit ALU Simulator)</div>
+      <div class="alu-sim-title">1 位元 ALU 電路訊號模擬器 (Interactive 1-bit ALU Simulator)</div>
       <div class="alu-sim-desc">
         點擊下方運算控制按鈕，即時觀察 <strong>Ainvert</strong>、<strong>Binvert</strong>、<strong>CarryIn</strong> 與 <strong>Operation</strong> 多工器選擇線如何切換內部數據通路（Data Path）與硬體運算單元：
       </div>
@@ -1234,7 +1238,7 @@ function formatMarkdown(text) {
     const imgHtml = `
       <div class="circuit-diagram-container">
         <img src="${img.src}" alt="${img.alt}" class="circuit-diagram-img" onclick="window.open('${img.src}')" title="點擊於新分頁開啟高解析度原圖" />
-        <div class="circuit-diagram-caption">📐 電路架構圖：${img.alt}（點擊圖片可於新分頁開啟高解析度原圖）</div>
+        <div class="circuit-diagram-caption">電路架構圖：${img.alt}（點擊圖片可於新分頁開啟高解析度原圖）</div>
       </div>
     `;
     s = s.replace(`___IMG_TOKEN_${idx}___`, imgHtml);
@@ -1283,4 +1287,48 @@ function shuffleArray(array) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
+}
+
+
+// 渲染互動邏輯實驗室 (Interactive Logic Lab)
+function renderInteractiveLab() {
+  const container = document.getElementById("interactiveLabContainer");
+  if (!container || !window.CO_INTERACTIVE) return;
+  window.CO_INTERACTIVE.initLab("interactiveLabContainer");
+}
+
+// 浮動回到頂部按鈕監聽
+function initBackToTop() {
+  const btn = document.getElementById("backToTopBtn");
+  if (!btn) return;
+  window.addEventListener("scroll", function() {
+    if (window.scrollY > 300) {
+      btn.classList.add("visible");
+    } else {
+      btn.classList.remove("visible");
+    }
+  });
+  btn.addEventListener("click", function() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
+// 程式碼區塊快速複製函式
+function copyToClipboard(btn) {
+  const panel = btn.closest(".code-panel");
+  if (!panel) return;
+  const pre = panel.querySelector(".code-content");
+  if (!pre) return;
+  const text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = "已複製！";
+    btn.style.color = "#4ade80";
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = "";
+    }, 1500);
+  }).catch(err => {
+    console.error("Clipboard copy error:", err);
+  });
 }
