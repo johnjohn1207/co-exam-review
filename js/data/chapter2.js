@@ -320,6 +320,72 @@ for(i=0; i<a; i++)
           `
         };
       }
+    },
+    {
+      id: "ch2_i_encoding",
+      title: "題型 2-6：I-type 指令欄位二進位轉十六進位機器碼【🔥 作業一 Q6b 必考真題】",
+      category: "MIPS 編碼",
+      generator: function() {
+        const pool = [
+          { op: 0x23, opBin: "100011", name: "lw", rs: 1, rt: 2, rsName: "$at", rtName: "$v0", imm: 4 },
+          { op: 0x2B, opBin: "101011", name: "sw", rs: 29, rt: 31, rsName: "$sp", rtName: "$ra", imm: 8 },
+          { op: 0x08, opBin: "001000", name: "addi", rs: 8, rt: 9, rsName: "$t0", rtName: "$t1", imm: 12 },
+          { op: 0x04, opBin: "000100", name: "beq", rs: 16, rt: 17, rsName: "$s0", rtName: "$s1", imm: 16 }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `對齊作業 Assignment 1 第 6 題 (b) 小題：
+給定下列 MIPS I-type 指令之欄位定義：
+- **op** = 0x${p.op.toString(16).toUpperCase()} (${p.name})
+- **rs** = ${p.rs} (${p.rsName})
+- **rt** = ${p.rt} (${p.rtName})
+- **immediate / const** = 0x${p.imm.toString(16).toUpperCase()} (十進位 ${p.imm})
+
+**請計算：此 I-type 指令對應的 32 位元十六進位機器碼為何？**（格式如 \`0x8C220004\` 或 \`8C220004\`）`;
+      },
+      solve: function(p) {
+        // op: 6 bits
+        // rs: 5 bits
+        // rt: 5 bits
+        // imm: 16 bits
+        const num = ((p.op << 26) | (p.rs << 21) | (p.rt << 16) | (p.imm & 0xFFFF)) >>> 0;
+        const hex = num.toString(16).padStart(8, '0').toUpperCase();
+
+        const rsBin = p.rs.toString(2).padStart(5, '0');
+        const rtBin = p.rt.toString(2).padStart(5, '0');
+        const immBin = (p.imm & 0xFFFF).toString(2).padStart(16, '0');
+        const fullBin = `${p.opBin} ${rsBin} ${rtBin} ${immBin.slice(0, 4)} ${immBin.slice(4, 8)} ${immBin.slice(8, 12)} ${immBin.slice(12, 16)}`;
+
+        let asmStr = "";
+        if (p.name === "lw" || p.name === "sw") {
+          asmStr = `${p.name} ${p.rtName}, ${p.imm}(${p.rsName})`;
+        } else if (p.name === "addi") {
+          asmStr = `${p.name} ${p.rtName}, ${p.rsName}, ${p.imm}`;
+        } else if (p.name === "beq") {
+          asmStr = `${p.name} ${p.rsName}, ${p.rtName}, ${p.imm}`;
+        }
+
+        return {
+          correctValue: `0x${hex}`,
+          altValue: hex,
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **各欄位二進位解析**：
+   - \`op\` (6 bits) = \`${p.opBin}\` (十六進位 0x${p.op.toString(16).toUpperCase()})
+   - \`rs\` (5 bits) = \`${rsBin}\` (暫存器 $${p.rs})
+   - \`rt\` (5 bits) = \`${rtBin}\` (暫存器 $${p.rt})
+   - \`immediate\` (16 bits) = \`${immBin}\` (常數 ${p.imm})
+2. **組裝 32 位元二進位指令**：
+   \`${fullBin}\`
+3. **四位一組轉換為十六進位 (Hex)**：
+   \`${p.opBin}${rsBin}${rtBin}${immBin}\`
+   $\\implies$ **0x${hex}**
+4. **組合語言對應**：\`${asmStr}\`
+          `
+        };
+      }
     }
   ]
 });

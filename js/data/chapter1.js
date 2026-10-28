@@ -349,6 +349,59 @@ $$\\text{Speedup} = \\frac{T_{\\text{old}}}{T_{\\text{new}}} = \\frac{1}{(1 - f)
           `
         };
       }
+    },
+    {
+      id: "ch1_compiler_impact",
+      title: "題型 1-7：編譯器指令數、時脈週期與加速比綜合推算【🔥 作業一 Q3 必考真題】",
+      category: "編譯器效能分析",
+      generator: function() {
+        const icA = 1.0; // 1.0E9
+        const timeA = 1.1; // 1.1s
+        const icB = 1.2; // 1.2E9
+        const timeB = 1.5; // 1.5s
+        const cycleTimeNs = 1.0; // 1 ns
+        const icNew = 0.6; // 6.0E8
+        const cpiNew = 1.1;
+
+        return { icA, timeA, icB, timeB, cycleTimeNs, icNew, cpiNew };
+      },
+      render: function(p) {
+        return `對齊作業 Assignment 1 第 3 題：
+編譯器對應用程式效能具有深遠影響。假設針對同一個程式：
+- **Compiler A** 產生的動態指令數為 **${p.icA} $\\times 10^9$**，執行時間為 **${p.timeA} 秒**。
+- **Compiler B** 產生的動態指令數為 **${p.icB} $\\times 10^9$**，執行時間為 **${p.timeB} 秒**。
+- 原始處理器的時脈週期長度（Clock Cycle Time）為 **${p.cycleTimeNs} ns**（即時脈頻率為 1 GHz）。
+- 現研發出一款新型編譯器 **Compiler C**，其動態指令數僅需 **${p.icNew} $\\times 10^9$**，且平均 CPI 為 **${p.cpiNew}**。
+
+**請計算：在原始處理器上，使用新型編譯器 Compiler C 相較於 Compiler A 的效能加速比（Speedup）為多少？**（四捨五入取至小數點後兩位）`;
+      },
+      solve: function(p) {
+        // Time_A = 1.1s
+        // CPI_A = Time_A / (IC_A * CycleTime) = 1.1 / (1.0 * 10^9 * 1 * 10^-9) = 1.1
+        // Time_C = IC_New * CPI_New * CycleTime = 0.6 * 10^9 * 1.1 * 1 * 10^-9 = 0.66 s
+        // Speedup vs A = Time_A / Time_C = 1.1 / 0.66 = 1.67
+        // Time_B = 1.5s -> Speedup vs B = 1.5 / 0.66 = 2.27
+        const timeC = p.icNew * p.cpiNew * p.cycleTimeNs; // in seconds
+        const speedupVsA = p.timeA / timeC;
+        const rounded = parseFloat(speedupVsA.toFixed(2));
+
+        return {
+          correctValue: rounded,
+          unit: "倍",
+          tolerance: 0.05,
+          explanation: `
+1. **計算 Compiler A 的平均 CPI**：
+   $$\\text{CPI}_A = \\frac{\\text{CPU Time}_A}{\\text{IC}_A \\times \\text{Cycle Time}} = \\frac{${p.timeA}\\text{ s}}{(${p.icA} \\times 10^9) \\times (1 \\times 10^{-9}\\text{ s})} = ${p.timeA / p.icA}$$
+2. **計算 Compiler B 的平均 CPI**：
+   $$\\text{CPI}_B = \\frac{\\text{CPU Time}_B}{\\text{IC}_B \\times \\text{Cycle Time}} = \\frac{${p.timeB}\\text{ s}}{(${p.icB} \\times 10^9) \\times (1 \\times 10^{-9}\\text{ s})} = ${(p.timeB / p.icB).toFixed(2)}$$
+3. **計算使用新型 Compiler C 在原始處理器上的執行時間**：
+   $$\\text{CPU Time}_C = \\text{IC}_C \\times \\text{CPI}_C \\times \\text{Cycle Time} = (${p.icNew} \\times 10^9) \\times ${p.cpiNew} \\times (1 \\times 10^{-9}\\text{ s}) = ${timeC.toFixed(2)}\\text{ 秒}$$
+4. **計算 Compiler C 相對 Compiler A 之加速比 (Speedup)**：
+   $$\\text{Speedup}_{C \\text{ vs } A} = \\frac{\\text{CPU Time}_A}{\\text{CPU Time}_C} = \\frac{${p.timeA}\\text{ s}}{${timeC.toFixed(2)}\\text{ s}} \\approx ${rounded}\\text{ 倍}$$
+   （若相較於 Compiler B，加速比為 $\\frac{${p.timeB}}{${timeC.toFixed(2)}} \\approx ${(p.timeB / timeC).toFixed(2)}\\text{ 倍}$）
+          `
+        };
+      }
     }
   ]
 });
