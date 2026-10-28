@@ -85,19 +85,24 @@ function renderCheatSheet() {
 
     html += `</div><h3 style="font-size: 1rem; color: var(--primary); margin: 1.25rem 0 0.75rem 0;">📖 重點知識樹整理</h3>`;
 
-    chap.summary.forEach(sec => {
+    chap.summary.forEach((sec, sIdx) => {
       html += `
         <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 1.15rem 1.25rem; border-radius: var(--radius); border: 1px solid var(--border-color);">
           <h4 style="font-size: 0.98rem; margin-bottom: 0.5rem; color: var(--text-main); font-weight: 700;">${sec.heading}</h4>
           <div style="font-size: 0.9rem; line-height: 1.7; color: var(--text-muted);">${formatMarkdown(sec.content)}</div>
         </div>
       `;
+      // 若為 Chapter 3 且為第 2 節（ALU 設計），在其下方動態掛載互動式電路模擬器
+      if (chap.id === "ch3" && sIdx === 1) {
+        html += getAluSimulatorHtml();
+      }
     });
 
     html += `</div>`;
   });
 
   container.innerHTML = html;
+  initAluSimulator();
   window.CO_SOLVER.renderMath(container);
 }
 
@@ -889,14 +894,382 @@ window.CO_DATA.chapters.push({
   `;
 }
 
-// 輔助函式：Markdown 粗體與條列簡易轉譯
+// 9. 互動式 1 位元 ALU 訊號模擬器產生器
+function getAluSimulatorHtml() {
+  return `
+    <div class="alu-sim-container" id="aluSimulatorBox">
+      <div class="alu-sim-title">⚡ 互動式 1 位元 ALU 電路訊號模擬器 (Interactive 1-bit ALU Simulator)</div>
+      <div class="alu-sim-desc">
+        點擊下方運算控制按鈕，即時觀察 <strong>Ainvert</strong>、<strong>Binvert</strong>、<strong>CarryIn</strong> 與 <strong>Operation</strong> 多工器選擇線如何切換內部數據通路（Data Path）與硬體運算單元：
+      </div>
+      
+      <div class="alu-btn-group">
+        <button class="alu-sim-btn active" data-op="AND">AND (0 0 00)</button>
+        <button class="alu-sim-btn" data-op="OR">OR (0 0 01)</button>
+        <button class="alu-sim-btn" data-op="ADD">ADD (0 0 10)</button>
+        <button class="alu-sim-btn" data-op="SUB">SUB (0 1 10, Cin=1)</button>
+        <button class="alu-sim-btn" data-op="NOR">NOR (1 1 00)</button>
+        <button class="alu-sim-btn" data-op="SLT">SLT (0 1 11, Cin=1)</button>
+      </div>
+
+      <div class="alu-status-panel">
+        <div class="alu-status-chip">
+          <div class="alu-status-chip-label">Ainvert (反相 A)</div>
+          <div class="alu-status-chip-val" id="aluStatAinv">0</div>
+        </div>
+        <div class="alu-status-chip">
+          <div class="alu-status-chip-label">Binvert (反相 B)</div>
+          <div class="alu-status-chip-val" id="aluStatBinv">0</div>
+        </div>
+        <div class="alu-status-chip">
+          <div class="alu-status-chip-label">CarryIn (進位初值)</div>
+          <div class="alu-status-chip-val" id="aluStatCin">0</div>
+        </div>
+        <div class="alu-status-chip">
+          <div class="alu-status-chip-label">Operation (多工通道)</div>
+          <div class="alu-status-chip-val" id="aluStatOp">00 (Port 0)</div>
+        </div>
+        <div class="alu-status-chip">
+          <div class="alu-status-chip-label">作用功能單元</div>
+          <div class="alu-status-chip-val" id="aluStatUnit">AND 邏輯閘</div>
+        </div>
+      </div>
+
+      <div class="alu-sim-svg-wrapper">
+        <svg id="aluSvgDiagram" viewBox="0 0 760 380" width="100%" height="auto" style="max-height: 420px; font-family: var(--font-mono); font-size: 12px;">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+            </marker>
+            <marker id="arrowActive" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+            </marker>
+          </defs>
+
+          <!-- 1. Input A & MUX_A -->
+          <text x="25" y="80" fill="#94a3b8" font-weight="bold">輸入 a</text>
+          <line id="wire_a_direct" x1="75" y1="75" x2="135" y2="75" stroke="#38bdf8" stroke-width="2.5" />
+          <line id="wire_a_branch" x1="90" y1="75" x2="90" y2="105" stroke="#475569" stroke-width="1.5" />
+          <line id="wire_a_inv_in" x1="90" y1="105" x2="105" y2="105" stroke="#475569" stroke-width="1.5" />
+          <polygon id="gate_inv_a" points="105,97 120,105 105,113" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <circle id="circ_inv_a" cx="123" cy="105" r="3" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <line id="wire_a_inv_out" x1="126" y1="105" x2="135" y2="105" stroke="#475569" stroke-width="1.5" />
+          <rect id="mux_a" x="135" y="60" width="30" height="55" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+          <text x="142" y="77" fill="#94a3b8" font-size="10">0</text>
+          <text x="142" y="107" fill="#94a3b8" font-size="10">1</text>
+          <line id="wire_ainvert" x1="150" y1="25" x2="150" y2="60" stroke="#64748b" stroke-width="2" stroke-dasharray="3,3" />
+          <text x="125" y="20" fill="#f59e0b" font-weight="bold">Ainvert</text>
+
+          <!-- 2. Input B & MUX_B -->
+          <text x="25" y="225" fill="#94a3b8" font-weight="bold">輸入 b</text>
+          <line id="wire_b_direct" x1="75" y1="220" x2="135" y2="220" stroke="#38bdf8" stroke-width="2.5" />
+          <line id="wire_b_branch" x1="90" y1="220" x2="90" y2="250" stroke="#475569" stroke-width="1.5" />
+          <line id="wire_b_inv_in" x1="90" y1="250" x2="105" y2="250" stroke="#475569" stroke-width="1.5" />
+          <polygon id="gate_inv_b" points="105,242 120,250 105,258" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <circle id="circ_inv_b" cx="123" cy="250" r="3" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <line id="wire_b_inv_out" x1="126" y1="250" x2="135" y2="250" stroke="#475569" stroke-width="1.5" />
+          <rect id="mux_b" x="135" y="205" width="30" height="55" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+          <text x="142" y="222" fill="#94a3b8" font-size="10">0</text>
+          <text x="142" y="252" fill="#94a3b8" font-size="10">1</text>
+          <line id="wire_binvert" x1="150" y1="170" x2="150" y2="205" stroke="#64748b" stroke-width="2" stroke-dasharray="3,3" />
+          <text x="125" y="165" fill="#f59e0b" font-weight="bold">Binvert</text>
+
+          <!-- 3. Interconnection Wires -->
+          <line id="wire_amux" x1="165" y1="87" x2="200" y2="87" stroke="#38bdf8" stroke-width="2" />
+          <path id="wire_amux_distrib" d="M 200 87 L 245 87 M 200 87 L 200 145 L 245 145 M 200 145 L 200 215 L 245 215" stroke="#38bdf8" stroke-width="1.5" fill="none" />
+
+          <line id="wire_bmux" x1="165" y1="232" x2="215" y2="232" stroke="#38bdf8" stroke-width="2" />
+          <path id="wire_bmux_distrib" d="M 215 232 L 245 232 M 215 232 L 215 160 L 245 160 M 215 160 L 215 97 L 245 97" stroke="#38bdf8" stroke-width="1.5" fill="none" />
+
+          <!-- 4. Functional Units -->
+          <!-- AND Gate -->
+          <path id="gate_and" d="M 245 75 L 265 75 A 17 17 0 0 1 265 109 L 245 109 Z" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2" />
+          <text id="text_and" x="252" y="96" fill="#38bdf8" font-size="11" font-weight="bold">AND</text>
+          <line id="wire_and_out" x1="282" y1="92" x2="480" y2="92" stroke="#38bdf8" stroke-width="2" />
+
+          <!-- OR Gate -->
+          <path id="gate_or" d="M 245 137 Q 255 152 245 167 Q 275 167 285 152 Q 275 137 245 137 Z" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <text id="text_or" x="256" y="156" fill="#94a3b8" font-size="11" font-weight="bold">OR</text>
+          <line id="wire_or_out" x1="285" y1="152" x2="480" y2="152" stroke="#475569" stroke-width="1.5" />
+
+          <!-- Full Adder -->
+          <rect id="gate_adder" x="245" y="200" width="85" height="65" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+          <text id="text_adder" x="260" y="235" fill="#94a3b8" font-size="11" font-weight="bold">全加器</text>
+          <text x="257" y="250" fill="#64748b" font-size="9">(Adder)</text>
+          <line id="wire_cin" x1="287" y1="165" x2="287" y2="200" stroke="#64748b" stroke-width="2" />
+          <text x="265" y="160" fill="#f59e0b" font-weight="bold">CarryIn</text>
+          <line id="wire_cout" x1="287" y1="265" x2="287" y2="305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+          <text x="255" y="325" fill="#f59e0b" font-weight="bold">CarryOut</text>
+          <line id="wire_adder_out" x1="330" y1="232" x2="480" y2="232" stroke="#475569" stroke-width="1.5" />
+
+          <!-- Less Input -->
+          <line id="wire_less" x1="165" y1="310" x2="480" y2="310" stroke="#475569" stroke-width="1.5" />
+          <text x="50" y="315" fill="#94a3b8" font-weight="bold">Less (來自第 31 位元 Set)</text>
+
+          <!-- 5. 4-to-1 Multiplexer -->
+          <polygon id="mux_4to1" points="480,50 535,70 535,330 480,350" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+          <circle id="port_0" cx="488" cy="92" r="5" fill="#38bdf8" />
+          <text id="text_p0" x="498" y="96" fill="#38bdf8" font-size="10" font-weight="bold">0 (AND)</text>
+
+          <circle id="port_1" cx="488" cy="152" r="5" fill="#475569" />
+          <text id="text_p1" x="498" y="156" fill="#64748b" font-size="10">1 (OR)</text>
+
+          <circle id="port_2" cx="488" cy="232" r="5" fill="#475569" />
+          <text id="text_p2" x="498" y="236" fill="#64748b" font-size="10">2 (ADD)</text>
+
+          <circle id="port_3" cx="488" cy="310" r="5" fill="#475569" />
+          <text id="text_p3" x="498" y="314" fill="#64748b" font-size="10">3 (LESS)</text>
+
+          <line id="wire_op" x1="507" y1="20" x2="507" y2="60" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="3,3" />
+          <text x="460" y="18" fill="#f59e0b" font-weight="bold">Operation (2 bits)</text>
+
+          <!-- Result output -->
+          <line id="wire_result" x1="535" y1="200" x2="670" y2="200" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowActive)" />
+          <text x="685" y="205" fill="#38bdf8" font-size="14" font-weight="bold">Result</text>
+        </svg>
+      </div>
+
+      <div class="alu-sim-explain" id="aluSimExplain">
+        <strong>當前運算解析（AND）</strong>：Ainvert=0, Binvert=0，輸入 A 與 B 直通進入 AND 邏輯閘；Operation=00 選擇多工器第 0 號通道，Result 輸出逐位元 AND 運算結果。
+      </div>
+    </div>
+  `;
+}
+
+function initAluSimulator() {
+  const box = document.getElementById("aluSimulatorBox");
+  if (!box) return;
+
+  const aluOps = {
+    AND: {
+      ainv: 0, binv: 0, cin: 0, op: "00", opPort: 0,
+      unit: "AND 邏輯閘",
+      explain: "<strong>當前運算解析（AND）</strong>：Ainvert=0, Binvert=0，輸入 a 與 b 直通進入 AND 邏輯閘；Operation=00 選擇多工器第 0 號通道，Result 輸出逐位元 AND 運算結果。"
+    },
+    OR: {
+      ainv: 0, binv: 0, cin: 0, op: "01", opPort: 1,
+      unit: "OR 邏輯閘",
+      explain: "<strong>當前運算解析（OR）</strong>：Ainvert=0, Binvert=0，輸入 a 與 b 直通進入 OR 邏輯閘；Operation=01 選擇多工器第 1 號通道，Result 輸出逐位元 OR 運算結果。"
+    },
+    ADD: {
+      ainv: 0, binv: 0, cin: 0, op: "10", opPort: 2,
+      unit: "全加器 (Full Adder)",
+      explain: "<strong>當前運算解析（ADD）</strong>：Ainvert=0, Binvert=0, CarryIn=0；輸入 a 與 b 由全加器執行加法 $a + b$，產生和（Sum）與進位（CarryOut）；Operation=10 選擇多工器第 2 號通道。"
+    },
+    SUB: {
+      ainv: 0, binv: 1, cin: 1, op: "10", opPort: 2,
+      unit: "全加器 (二補數減法)",
+      explain: "<strong>當前運算解析（SUB）</strong>：Binvert=1 將 b 逐位元反相 (~b)，最末端第 0 位元 CarryIn 設為 1，全加器執行 $a + (\\sim b) + 1 = a - b$；Operation=10 選擇多工器第 2 號通道輸出差值。"
+    },
+    NOR: {
+      ainv: 1, binv: 1, cin: 0, op: "00", opPort: 0,
+      unit: "AND 邏輯閘 (笛摩根定理)",
+      explain: "<strong>當前運算解析（NOR）</strong>：Ainvert=1, Binvert=1 將輸入分別反相為 $\\sim a$ 與 $\\sim b$，送入 AND 閘得 $\\sim a \\cdot \\sim b = \\overline{a + b}$（笛摩根定理）；Operation=00 選擇第 0 號通道，實現硬體 NOR 運算。"
+    },
+    SLT: {
+      ainv: 0, binv: 1, cin: 1, op: "11", opPort: 3,
+      unit: "Less 通道 (來自第 31 位元 Set)",
+      explain: "<strong>當前運算解析（SLT）</strong>：執行減法 $a - b$（Binvert=1, CarryIn=1）；若 $a < b$，第 31 位元全加器的符號輸出為 1（經溢位修正 $\\text{Set} = \\text{Sign} \\oplus \\text{Overflow}$）回傳至第 0 位元的 Less 端；Operation=11 選擇第 3 號通道輸出置位值。"
+    }
+  };
+
+  const buttons = box.querySelectorAll(".alu-sim-btn");
+  const elAinv = document.getElementById("aluStatAinv");
+  const elBinv = document.getElementById("aluStatBinv");
+  const elCin = document.getElementById("aluStatCin");
+  const elOp = document.getElementById("aluStatOp");
+  const elUnit = document.getElementById("aluStatUnit");
+  const elExplain = document.getElementById("aluSimExplain");
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", function() {
+      buttons.forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+
+      const opKey = this.getAttribute("data-op");
+      const cfg = aluOps[opKey];
+      if (!cfg) return;
+
+      if (elAinv) elAinv.textContent = cfg.ainv;
+      if (elBinv) elBinv.textContent = cfg.binv;
+      if (elCin) elCin.textContent = cfg.cin;
+      if (elOp) elOp.textContent = `${cfg.op} (Port ${cfg.opPort})`;
+      if (elUnit) elUnit.textContent = cfg.unit;
+      if (elExplain) {
+        elExplain.innerHTML = cfg.explain;
+        window.CO_SOLVER.renderMath(elExplain);
+      }
+
+      updateAluSvg(opKey, cfg);
+    });
+  });
+}
+
+function updateAluSvg(opKey, cfg) {
+  const activeColor = "#38bdf8";
+  const inactiveColor = "#475569";
+  const activeFill = "rgba(56, 189, 248, 0.2)";
+  const inactiveFill = "#1e293b";
+
+  // A Invert Path
+  const wireADirect = document.getElementById("wire_a_direct");
+  const wireAInvOut = document.getElementById("wire_a_inv_out");
+  const gateInvA = document.getElementById("gate_inv_a");
+  if (wireADirect && wireAInvOut) {
+    if (cfg.ainv === 1) {
+      wireADirect.setAttribute("stroke", inactiveColor);
+      wireAInvOut.setAttribute("stroke", activeColor);
+      wireAInvOut.setAttribute("stroke-width", "2.5");
+      if (gateInvA) gateInvA.setAttribute("stroke", activeColor);
+    } else {
+      wireADirect.setAttribute("stroke", activeColor);
+      wireAInvOut.setAttribute("stroke", inactiveColor);
+      wireAInvOut.setAttribute("stroke-width", "1.5");
+      if (gateInvA) gateInvA.setAttribute("stroke", inactiveColor);
+    }
+  }
+
+  // B Invert Path
+  const wireBDirect = document.getElementById("wire_b_direct");
+  const wireBInvOut = document.getElementById("wire_b_inv_out");
+  const gateInvB = document.getElementById("gate_inv_b");
+  if (wireBDirect && wireBInvOut) {
+    if (cfg.binv === 1) {
+      wireBDirect.setAttribute("stroke", inactiveColor);
+      wireBInvOut.setAttribute("stroke", activeColor);
+      wireBInvOut.setAttribute("stroke-width", "2.5");
+      if (gateInvB) gateInvB.setAttribute("stroke", activeColor);
+    } else {
+      wireBDirect.setAttribute("stroke", activeColor);
+      wireBInvOut.setAttribute("stroke", inactiveColor);
+      wireBInvOut.setAttribute("stroke-width", "1.5");
+      if (gateInvB) gateInvB.setAttribute("stroke", inactiveColor);
+    }
+  }
+
+  // CarryIn Wire
+  const wireCin = document.getElementById("wire_cin");
+  if (wireCin) {
+    wireCin.setAttribute("stroke", cfg.cin === 1 ? "#f59e0b" : "#64748b");
+    wireCin.setAttribute("stroke-width", cfg.cin === 1 ? "2.5" : "1.5");
+  }
+
+  // Units
+  const gateAnd = document.getElementById("gate_and");
+  const wireAndOut = document.getElementById("wire_and_out");
+  const textAnd = document.getElementById("text_and");
+
+  const gateOr = document.getElementById("gate_or");
+  const wireOrOut = document.getElementById("wire_or_out");
+  const textOr = document.getElementById("text_or");
+
+  const gateAdder = document.getElementById("gate_adder");
+  const wireAdderOut = document.getElementById("wire_adder_out");
+  const textAdder = document.getElementById("text_adder");
+
+  const wireLess = document.getElementById("wire_less");
+
+  // Reset all units
+  [gateAnd, gateOr, gateAdder].forEach(g => {
+    if (g) {
+      g.setAttribute("fill", inactiveFill);
+      g.setAttribute("stroke", inactiveColor);
+    }
+  });
+  [wireAndOut, wireOrOut, wireAdderOut, wireLess].forEach(w => {
+    if (w) {
+      w.setAttribute("stroke", inactiveColor);
+      w.setAttribute("stroke-width", "1.5");
+    }
+  });
+  [textAnd, textOr, textAdder].forEach(t => {
+    if (t) t.setAttribute("fill", "#94a3b8");
+  });
+
+  // Highlight active unit
+  if (opKey === "AND" || opKey === "NOR") {
+    if (gateAnd) { gateAnd.setAttribute("fill", activeFill); gateAnd.setAttribute("stroke", activeColor); }
+    if (wireAndOut) { wireAndOut.setAttribute("stroke", activeColor); wireAndOut.setAttribute("stroke-width", "2.5"); }
+    if (textAnd) textAnd.setAttribute("fill", activeColor);
+  } else if (opKey === "OR") {
+    if (gateOr) { gateOr.setAttribute("fill", activeFill); gateOr.setAttribute("stroke", activeColor); }
+    if (wireOrOut) { wireOrOut.setAttribute("stroke", activeColor); wireOrOut.setAttribute("stroke-width", "2.5"); }
+    if (textOr) textOr.setAttribute("fill", activeColor);
+  } else if (opKey === "ADD" || opKey === "SUB") {
+    if (gateAdder) { gateAdder.setAttribute("fill", activeFill); gateAdder.setAttribute("stroke", activeColor); }
+    if (wireAdderOut) { wireAdderOut.setAttribute("stroke", activeColor); wireAdderOut.setAttribute("stroke-width", "2.5"); }
+    if (textAdder) textAdder.setAttribute("fill", activeColor);
+  } else if (opKey === "SLT") {
+    if (gateAdder) { gateAdder.setAttribute("stroke", activeColor); }
+    if (wireLess) { wireLess.setAttribute("stroke", activeColor); wireLess.setAttribute("stroke-width", "2.5"); }
+  }
+
+  // MUX Ports
+  for (let i = 0; i <= 3; i++) {
+    const portCirc = document.getElementById(`port_${i}`);
+    const portText = document.getElementById(`text_p${i}`);
+    if (portCirc) portCirc.setAttribute("fill", i === cfg.opPort ? activeColor : inactiveColor);
+    if (portText) portText.setAttribute("fill", i === cfg.opPort ? activeColor : "#64748b");
+  }
+}
+
+// 輔助函式：Markdown 粗體、清單、表格與電路圖轉譯
 function formatMarkdown(text) {
   if (!text) return "";
   let s = text.trim();
+
+  // 1. 提取 Markdown 圖片語法 ![alt](src)
+  const images = [];
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, src) {
+    const placeholder = `___IMG_TOKEN_${images.length}___`;
+    images.push({ alt, src });
+    return placeholder;
+  });
+
+  // 2. 轉義 HTML 特殊字元
   s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // 3. 還原圖片並生成可點擊放大的電路展示區塊
+  images.forEach((img, idx) => {
+    const imgHtml = `
+      <div class="circuit-diagram-container">
+        <img src="${img.src}" alt="${img.alt}" class="circuit-diagram-img" onclick="window.open('${img.src}')" title="點擊於新分頁開啟高解析度原圖" />
+        <div class="circuit-diagram-caption">📐 電路架構圖：${img.alt}（點擊圖片可於新分頁開啟高解析度原圖）</div>
+      </div>
+    `;
+    s = s.replace(`___IMG_TOKEN_${idx}___`, imgHtml);
+  });
+
+  // 4. 處理 Markdown 表格
+  s = s.replace(/((?:\|[^\n]+\|\r?\n?)+)/g, function(tableText) {
+    const lines = tableText.trim().split(/\r?\n/);
+    if (lines.length < 2) return tableText;
+    let tableHtml = '<table class="line-breakdown-table" style="margin: 0.75rem 0;">';
+    let hasThead = false;
+    lines.forEach((line) => {
+      if (line.includes('---')) {
+        hasThead = true;
+        return;
+      }
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      if (!hasThead) {
+        tableHtml += '<thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+        hasThead = true;
+      } else {
+        tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      }
+    });
+    tableHtml += '</tbody></table>';
+    return tableHtml;
+  });
+
+  // 5. 處理反引號程式碼
   s = s.replace(/`([^`]+)`/g, '<code style="background: var(--code-bg); color: var(--primary); padding: 0.1rem 0.3rem; border-radius: 4px; font-family: var(--font-mono);">$1</code>');
+  // 6. 處理粗體
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // 7. 處理清單
   s = s.replace(/^\s*-\s+(.+)$/gm, '<li style="margin-left: 1.25rem;">$1</li>');
+  // 8. 處理換行
   s = s.replace(/\n\n/g, '<div style="margin-bottom: 0.6rem;"></div>');
   return s;
 }

@@ -40,6 +40,14 @@ window.CO_DATA.chapters.push({
       content: `
 - **1 位元 ALU 基礎結構**：
   由 AND 閘、OR 閘、全加器（Full Adder）以及一個 4 對 1 多工器（Multiplexer）組成。
+  ![投影片第 16 頁：1 位元邏輯運算單元 (1-bit Logical Unit for AND, OR)](images/alu_1bit_logic.png)
+  ![投影片第 20 頁：1 位元全加器內部電路架構 (1-bit Full Adder)](images/alu_1bit_adder.png)
+  ![投影片第 21 頁：1 位元基礎 ALU 電路 (包含 AND, OR, 全加器與 4 對 1 多工器)](images/alu_1bit_full.png)
+
+- **32 位元連波進位 ALU (Ripple-Carry ALU)**：
+  由 32 個 1 位元 ALU 串聯而成，每一級的 CarryOut 接到下一級的 CarryIn：
+  ![投影片第 22 頁：32 位元連波進位 ALU 串接架構 (32-bit Ripple-Carry ALU)](images/alu_32bit_ripple.png)
+
 - **控制訊號表與功能對照**：
   | 訊號組合 (Ainvert, Binvert, Operation) | 執行運算 | 說明 |
   | :--- | :--- | :--- |
@@ -49,13 +57,29 @@ window.CO_DATA.chapters.push({
   | 0 1 10 | SUB | 算術減法 ($A + \\overline{B} + 1$，CarryIn 設為 1) |
   | 1 1 00 | NOR | 笛摩根定理：$\\overline{A} \\cdot \\overline{B} = \\overline{A + B}$ |
   | 0 1 11 | SLT | 小於則置 1 (Set on Less Than) |
-- **SLT (Set-on-less-than) 實作關鍵**：
+
+- **減法運算硬體實現**：
+  透過將 Binvert 設為 1，並將最末端第 0 位元的 CarryIn 設為 1，實現 $A + \\overline{B} + 1 = A - B$：
+  ![投影片第 24 頁：減法運算硬體實現 (Binvert=1 且 CarryIn=1)](images/alu_subtract.png)
+
+- **NOR 邏輯運算硬體實現**：
+  利用笛摩根定理（DeMorgan's Laws）$\\overline{A + B} = \\overline{A} \\cdot \\overline{B}$，將 Ainvert 設為 1、Binvert 設為 1，並選擇 AND 閘（Operation = 00）：
+  ![投影片第 25 頁：NOR 運算硬體實現 (笛摩根定理 Ainvert=1 且 Binvert=1)](images/alu_nor.png)
+
+- **SLT (Set-on-less-than) 實作關鍵與跨位元迴路**：
   - 運算實質為執行減法 $A - B$。若 $A < B$，則 $A - B < 0$，其 MSB（符號位元）為 1。
   - **第 31 位元 ALU (MSB) 的 \`Set\` 輸出線直接連接回第 0 位元 ALU (LSB) 的 \`Less\` 輸入**；其餘第 1 至 31 位元 ALU 的 \`Less\` 皆接地（接 0）。
   - **符號溢位補償**：若發生溢位，減法結果的符號位元會顛倒，故真正正確的判斷邏輯為：
     $$\\text{Set} = \\text{Sign} \\oplus \\text{Overflow}$$
-- **Zero 檢測邏輯（支援 beq / bne）**：
+  ![投影片第 28 頁：Set-on-less-than (SLT) 跨位元迴路與第 31 位元溢位校正](images/alu_slt.png)
+
+- **Zero 檢測邏輯（支援 beq / bne 分支指令）**：
   由一個將 32 個輸出位元全部輸入的**巨大 32 輸入 NOR 閘**構成。當所有 32 位元輸出全為 0 時，Zero 訊號輸出 1。
+  ![投影片第 29 頁：Zero 零值檢測邏輯 (32 輸入大型 NOR 閘)](images/alu_zero_detect.png)
+
+- **最終完整的 32 位元 MIPS ALU 總硬體架構圖**：
+  結合 Ainvert、Binvert、CarryIn、Operation、Overflow 檢測與 Zero 旗標的完整微架構：
+  ![投影片第 30 頁：最終完整的 32 位元 MIPS ALU 總硬體架構圖 (A Final 32-bit ALU)](images/alu_32bit_final.png)
       `
     },
     {
@@ -67,6 +91,7 @@ window.CO_DATA.chapters.push({
     - 被乘數固定於 32 位元暫存器中不位移。
     - 乘積暫存器（Product Register）為 64 位元，初始時左半部為 0，**右半部放入乘數**。
     - 每次迭代：若乘數當前最低位元為 1，將被乘數加至乘積暫存器的左半部；隨後將**整個 64 位元乘積暫存器向右位移 1 位元**。歷經 32 週期完成。
+  ![投影片第 37 頁：最佳化 32 位元乘法器硬體架構 (Optimized Multiplier)](images/multiplier_optimized.png)
 - **布斯演算法（Booth's Algorithm）核心概念**：
   - 針對有號數 2 補數乘法設計，能將連續的 1 字串（如 $01111110_2$）簡化為一次減法與一次加法：
     $$\\text{Multiplicand} \\times 01111110_2 = \\text{Multiplicand} \\times (10000000_2 - 00000010_2)$$
@@ -93,6 +118,7 @@ window.CO_DATA.chapters.push({
     - 若餘數 $\\ge 0$：代表夠減，將商數最低位元設為 1。
     - 若餘數 $< 0$：代表不夠減，**加回除數進行回復（Restore）**，將商數最低位元設為 0。
   - 重複執行 32 次。
+  ![投影片第 51 頁：最佳化 32 位元除法器硬體架構 (Optimized Divider)](images/divider_optimized.png)
 - **帶符號除法正負號規則（嚴格遵循）**：
   $$\\text{Dividend} = \\text{Quotient} \\times \\text{Divisor} + \\text{Remainder}$$
   - **商數符號**：被除數與除數異號時為負，同號時為正。
@@ -125,9 +151,12 @@ window.CO_DATA.chapters.push({
   | 1 至 254 | 任意 | **一般正規化浮點數 (Normalized)** |
   | 255 (全 1) | 0 (全 0) | 正負無窮大 ($\\pm \\infty$)，如除以 0 產生 |
   | 255 (全 1) | 非 0 | **非數值 (NaN, Not a Number)**，如 $0/0$ 或 $\\sqrt{-1}$ |
-- **浮點數加法四步驟演算法**：
+- **浮點數加法四步驟硬體流程**：
   1. **對齊小數點（Align Exponents）**：比較兩數指數，將較小指數數值的尾數向右位移 $(E_1 - E_2)$ 位元，使其指數與較大者相同。
   2. **尾數相加／相減（Add Significands）**：將兩正規化尾數依符號進行加減。
+  3. **結果正規化（Normalize）**：將和或差調整回 $1.xxxx_2 \\times 2^E$ 格式，並同步調整指數；檢測是否發生溢位或下溢（Underflow）。
+  4. **捨入（Rounding）**：將尾數依捨入模式（如 Round to nearest even）裁剪回 23 位元。
+  ![投影片第 60 頁：IEEE 754 浮點數加法器硬體架構流程圖 (FP Adder Hardware)](images/fp_adder_hardware.png)
   3. **結果正規化（Normalize）**：將和或差調整回 $1.xxxx_2 \\times 2^E$ 格式，並同步調整指數；檢測是否發生溢位或下溢（Underflow）。
   4. **捨入（Rounding）**：將尾數依捨入模式（如 Round to nearest even）裁剪回 23 位元。
 - **MIPS 浮點硬體架構（Coprocessor 1）**：
@@ -215,6 +244,8 @@ window.CO_DATA.chapters.push({
 - **Binvert (Bnegate)** = **${p.binv}**
 - **CarryIn** = **${p.cin}**
 - **Operation** = **${p.op}** (2 位元多工器選擇線)
+
+![32 位元 MIPS ALU 總硬體架構圖 (投影片第 30 頁)](images/alu_32bit_final.png)
 
 **請解碼：此組訊號控制 ALU 執行何種操作？**
 （請輸入英文縮寫，例如 \`AND\`、\`OR\`、\`ADD\`、\`SUB\`、\`NOR\` 或 \`SLT\`）`;

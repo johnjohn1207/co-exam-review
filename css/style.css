@@ -671,3 +671,131 @@ body {
   border: 1px solid rgba(168, 85, 247, 0.4);
 }
 
+/* 電路圖容器與展示樣式 */
+.circuit-diagram-container {
+  margin: 1.25rem 0;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.circuit-diagram-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  background: #ffffff;
+}
+
+.circuit-diagram-img:hover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.circuit-diagram-caption {
+  font-size: 0.88rem;
+  color: var(--primary);
+  margin-top: 0.6rem;
+  font-weight: 600;
+}
+
+/* 互動式 ALU 電路訊號模擬器樣式 */
+.alu-sim-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.alu-sim-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.alu-sim-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.alu-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.alu-sim-btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.alu-sim-btn.active {
+  background: var(--primary);
+  color: #0f172a;
+  border-color: var(--primary);
+}
+
+.alu-status-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.alu-status-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+
+.alu-status-chip-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.alu-status-chip-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--primary);
+  margin-top: 0.2rem;
+}
+
+.alu-sim-svg-wrapper {
+  background: #090d16;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.alu-sim-explain {
+  background: var(--bg-card);
+  border-left: 4px solid var(--primary);
+  padding: 0.75rem 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  line-height: 1.6;
+}
+
+
