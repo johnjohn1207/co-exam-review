@@ -87,21 +87,33 @@ window.CO_DATA.chapters.push({
       content: `
 - **乘法硬體架構演進**：
   - **傳統乘法器**：被乘數（Multiplicand）使用 64 位元暫存器左移，乘數（Multiplier）使用 32 位元暫存器右移，需 64 位元加法器。
+  ![投影片第 33 頁：傳統乘法器硬體架構 (Traditional Multiplier)](images/multiplier_traditional.png)
   - **最佳化乘法器（Optimized Multiplier）**：
     - 被乘數固定於 32 位元暫存器中不位移。
     - 乘積暫存器（Product Register）為 64 位元，初始時左半部為 0，**右半部放入乘數**。
     - 每次迭代：若乘數當前最低位元為 1，將被乘數加至乘積暫存器的左半部；隨後將**整個 64 位元乘積暫存器向右位移 1 位元**。歷經 32 週期完成。
   ![投影片第 37 頁：最佳化 32 位元乘法器硬體架構 (Optimized Multiplier)](images/multiplier_optimized.png)
-- **布斯演算法（Booth's Algorithm）核心概念**：
+
+- **布斯演算法（Booth's Algorithm）核心概念與判定規則**：
   - 針對有號數 2 補數乘法設計，能將連續的 1 字串（如 $01111110_2$）簡化為一次減法與一次加法：
     $$\\text{Multiplicand} \\times 01111110_2 = \\text{Multiplicand} \\times (10000000_2 - 00000010_2)$$
-  - **檢查位元對 $(Q_0, Q_{-1})$**（$Q_0$ 為乘數當前 LSB，$Q_{-1}$ 為上一週期移出的參考位元，初值為 0）：
-    - **0 0**：無連續 1 變化，不做運算，直接**算術右移（Arithmetic Shift Right）**。
-    - **0 1**：連續 1 的結束（由 1 轉 0），累加器 $A = A + M$，隨後算術右移。
-    - **1 0**：連續 1 的開頭（由 0 轉 1），累加器 $A = A - M$，隨後算術右移。
-    - **1 1**：連續 1 的中間，不做運算，直接**算術右移**。
+  - **檢查位元對 $(Q_0, Q_{-1})$ 規則表**（$Q_0$ 為乘數當前 LSB，$Q_{-1}$ 為上一週期移出的參考位元，初值為 0）：
+    | $Q_0$ | $Q_{-1}$ | 執行操作 (Operator) | 硬體行為意義 (Meaning) |
+    | :--- | :--- | :--- | :--- |
+    | 0 | 0 | 無運算（-） | 無連續 1 變化，直接算術右移（ASR） |
+    | 0 | 1 | $A = A + M$ | 連續 1 的結束（由 1 變 0），執行加法後算術右移 |
+    | 1 | 0 | $A = A - M$ | 連續 1 的開頭（由 0 變 1），執行減法後算術右移 |
+    | 1 | 1 | 無運算（-） | 連續 1 的中間，直接算術右移（ASR） |
+  ![投影片第 42 頁：布斯演算法判定規則表 (Booth's Algorithm Rule)](images/booth_rule.png)
   - **注意**：算術右移時，最高有效位元必須複製原本的符號位元（Sign Extension）。
-- **MIPS 乘法指令**：
+
+- **講義官方 8 週期逐步推導全記錄 (Trace Example: $7 \\times (-5) = -35$)**：
+  ![投影片第 43 頁：布斯演算法 8 週期逐步推導範例 (Cycle 1-2)](images/booth_trace_p1.png)
+  ![投影片第 44 頁：布斯演算法 8 週期逐步推導範例 (Cycle 3-4)](images/booth_trace_p2.png)
+  ![投影片第 45 頁：布斯演算法 8 週期逐步推導範例 (Cycle 5-6)](images/booth_trace_p3.png)
+  ![投影片第 46 頁：布斯演算法 8 週期逐步推導範例 (Cycle 7-8 結果驗證)](images/booth_trace_p4.png)
+
+- **MIPS 乘法指令與暫存器**：
   - \`mult $s1, $s2\` (有號數) / \`multu $s1, $s2\` (無號數)
   - 64 位元乘積存於兩個特殊暫存器：高 32 位元置於 \`hi\`，低 32 位元置於 \`lo\`。
   - 使用 \`mfhi $rd\` (Move from Hi) 與 \`mflo $rd\` (Move from Lo) 取出結果。
@@ -274,10 +286,39 @@ window.CO_DATA.chapters.push({
       category: "布斯演算法",
       generator: function() {
         const pool = [
-          { m: 2, q: -3, mBits: "0010", qBits: "1101", ans: -6 },
-          { m: -3, q: 4, mBits: "1101", qBits: "0100", ans: -12 },
-          { m: 3, q: 5, mBits: "0011", qBits: "0101", ans: 15 },
-          { m: -4, q: -2, mBits: "1100", qBits: "1110", ans: 8 }
+          {
+            m: 2, q: -3, mBits: "0010", qBits: "1101", ans: -6,
+            trace: [
+              { cycle: "初值", action: "初始設定", a: "0000", q: "1101", q1: "0" },
+              { cycle: "1", action: "Q0Q-1=10 -> A=A-M (1110) -> ASR", a: "1111", q: "0110", q1: "1" },
+              { cycle: "2", action: "Q0Q-1=01 -> A=A+M (0001) -> ASR", a: "0000", q: "1011", q1: "0" },
+              { cycle: "3", action: "Q0Q-1=10 -> A=A-M (1110) -> ASR", a: "1111", q: "0101", q1: "1" },
+              { cycle: "4", action: "Q0Q-1=11 -> 無運算 -> ASR", a: "1111", q: "1010", q1: "1" }
+            ],
+            resultBin: "11111010"
+          },
+          {
+            m: -3, q: 4, mBits: "1101", qBits: "0100", ans: -12,
+            trace: [
+              { cycle: "初值", action: "初始設定", a: "0000", q: "0100", q1: "0" },
+              { cycle: "1", action: "Q0Q-1=00 -> 無運算 -> ASR", a: "0000", q: "0010", q1: "0" },
+              { cycle: "2", action: "Q0Q-1=00 -> 無運算 -> ASR", a: "0000", q: "0001", q1: "0" },
+              { cycle: "3", action: "Q0Q-1=10 -> A=A-M (0011) -> ASR", a: "0001", q: "1000", q1: "1" },
+              { cycle: "4", action: "Q0Q-1=01 -> A=A+M (1110) -> ASR", a: "1111", q: "0100", q1: "0" }
+            ],
+            resultBin: "11110100"
+          },
+          {
+            m: 3, q: 5, mBits: "0011", qBits: "0101", ans: 15,
+            trace: [
+              { cycle: "初值", action: "初始設定", a: "0000", q: "0101", q1: "0" },
+              { cycle: "1", action: "Q0Q-1=10 -> A=A-M (1101) -> ASR", a: "1110", q: "1010", q1: "1" },
+              { cycle: "2", action: "Q0Q-1=01 -> A=A+M (0001) -> ASR", a: "0000", q: "1101", q1: "0" },
+              { cycle: "3", action: "Q0Q-1=10 -> A=A-M (1101) -> ASR", a: "1110", q: "1110", q1: "1" },
+              { cycle: "4", action: "Q0Q-1=01 -> A=A+M (0001) -> ASR", a: "0000", q: "1111", q1: "0" }
+            ],
+            resultBin: "00001111"
+          }
         ];
         return pool[Math.floor(Math.random() * pool.length)];
       },
@@ -290,20 +331,97 @@ window.CO_DATA.chapters.push({
 **請計算：經過 4 個運算週期後，最終 8 位元乘積所代表的十進位整數值為多少？**`;
       },
       solve: function(p) {
+        let traceMd = "| 週期 | 動作說明 | 累加器 A | 乘數 Q | Q-1 |\n| :--- | :--- | :--- | :--- | :--- |\n";
+        p.trace.forEach(t => {
+          traceMd += `| ${t.cycle} | ${t.action} | \`${t.a}\` | \`${t.q}\` | \`${t.q1}\` |\n`;
+        });
+
         return {
           correctValue: p.ans,
           unit: "",
           tolerance: 0,
           explanation: `
-1. **布斯演算法操作規則回顧**：
-   - 觀察乘數當前最低位元 $Q_0$ 與歷史位元 $Q_{-1}$：
-     - **00** 或 **11**：無狀態變化，直接進行**算術右移（ASR）**。
-     - **01**（遇連續 1 結束）：$A = A + M$，隨後算術右移。
-     - **10**（遇連續 1 起始）：$A = A - M$，隨後算術右移。
+1. **布斯演算法逐週期硬體追蹤表 (Cycle-by-Cycle Trace)**：
+${traceMd}
 2. **算術驗證**：
-   $$\\text{Product} = M \\times Q = (${p.m}) \\times (${p.q}) = ${p.ans}$$
-3. **布斯演算法優勢**：
-   透過連續 1 字串的合併，將原本需要多次加法的運算精簡為一次加法與一次減法，大幅降低加法器工作頻次並天然支援有號數乘法。
+   - 8 位元二進位結果：\`${p.resultBin}\`
+   - 十進位計算：$$\\text{Product} = M \\times Q = (${p.m}) \\times (${p.q}) = ${p.ans}$$
+3. **考試關鍵叮嚀**：
+   算術右移（ASR）時，最高有效位元必須保留符號位元擴展（Sign Extension，如負數右移最高位補 1），切勿補 0。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_booth_savings",
+      title: "題型 3-8：布斯演算法運算次數與連續 1 最佳化效益分析【🔥 期中高頻大題】",
+      category: "布斯演算法效益",
+      generator: function() {
+        const pool = [
+          {
+            multiplier: "01111110",
+            stdAdd: 6,
+            boothAdds: 1,
+            boothSubs: 1,
+            boothTotal: 2,
+            saved: 4,
+            detail: "乘數含連續 6 個 1。傳統乘法需要 6 次加法；布斯演算法在遇 10 時執行 1 次減法，遇 01 時執行 1 次加法，總共只需 2 次運算，省下 4 次加法！"
+          },
+          {
+            multiplier: "00111100",
+            stdAdd: 4,
+            boothAdds: 1,
+            boothSubs: 1,
+            boothTotal: 2,
+            saved: 2,
+            detail: "乘數含連續 4 個 1。傳統乘法需要 4 次加法；布斯演算法僅需 1 次減法（開頭）與 1 次加法（結尾），總共只需 2 次運算，省下 2 次加法。"
+          },
+          {
+            multiplier: "01010101",
+            stdAdd: 4,
+            boothAdds: 4,
+            boothSubs: 4,
+            boothTotal: 8,
+            saved: -4,
+            detail: "最差情況（Worst Case）：0 與 1 密集交錯，每次跳變皆觸發運算。傳統乘法需 4 次加法，布斯演算法卻需 4 次加法與 4 次減法（共 8 次運算），反而多出 4 次運算！"
+          },
+          {
+            multiplier: "01110000",
+            stdAdd: 3,
+            boothAdds: 1,
+            boothSubs: 1,
+            boothTotal: 2,
+            saved: 1,
+            detail: "乘數高位有連續 3 個 1。傳統乘法需 3 次加法；布斯演算法只需 1 次加法與 1 次減法，總共 2 次運算，省下 1 次加法。"
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `對齊投影片第 41–42 頁之布斯演算法核心概念：
+假設執行 8 位元乘法運算，給定乘數（Multiplier）之二進位為 **\`${p.multiplier}\`**。
+在傳統乘法器中，該乘數總共需要執行 **${p.stdAdd} 次加法**。
+
+**請計算：使用布斯演算法（Booth's Algorithm）處理此乘數時，總共需執行幾次算術運算（加法與減法次數之總和）？**`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.boothTotal,
+          unit: "次運算",
+          tolerance: 0,
+          explanation: `
+1. **布斯演算法判定原理（檢驗位元對 $Q_0 Q_{-1}$）**：
+   - 補齊初值 $Q_{-1} = 0$，乘數位元串為 \`${p.multiplier} (0)\`。
+   - 由右向左檢視每對相鄰位元：
+     - 每遇到 \`10\` 代表連續 1 的開頭，執行 **1 次減法**（$A = A - M$）。
+     - 每遇到 \`01\` 代表連續 1 的結束，執行 **1 次加法**（$A = A + M$）。
+     - 遇到 \`00\` 或 \`11\` 僅進行位移，不執行加減法。
+2. **本題運算次數統整**：
+   - 加法次數：**${p.boothAdds} 次**
+   - 減法次數：**${p.boothSubs} 次**
+   - **總算術運算次數**：$${p.boothAdds} + ${p.boothSubs} = $ **${p.boothTotal} 次**。
+3. **效益與考點結論**：
+   ${p.detail}
           `
         };
       }
