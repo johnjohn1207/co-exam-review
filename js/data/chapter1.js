@@ -352,7 +352,7 @@ $$\\text{Speedup} = \\frac{T_{\\text{old}}}{T_{\\text{new}}} = \\frac{1}{(1 - f)
     },
     {
       id: "ch1_compiler_impact",
-      title: "題型 1-7：編譯器指令數、時脈週期與加速比綜合推算【🔥 作業一 Q3 必考真題】",
+      title: "題型 1-7：編譯器指令數、時脈週期與加速比綜合推算【作業一 Q3 必考真題】",
       category: "編譯器效能分析",
       generator: function() {
         const icA = 1.0; // 1.0E9

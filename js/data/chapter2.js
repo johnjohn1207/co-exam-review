@@ -323,7 +323,7 @@ for(i=0; i<a; i++)
     },
     {
       id: "ch2_i_encoding",
-      title: "題型 2-6：I-type 指令欄位二進位轉十六進位機器碼【🔥 作業一 Q6b 必考真題】",
+      title: "題型 2-6：I-type 指令欄位二進位轉十六進位機器碼【作業一 Q6b 必考真題】",
       category: "MIPS 編碼",
       generator: function() {
         const pool = [

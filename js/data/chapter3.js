@@ -358,7 +358,7 @@ ${traceMd}
     },
     {
       id: "ch3_booth_savings",
-      title: "題型 3-8：布斯演算法運算次數與連續 1 最佳化效益分析【🔥 期中高頻大題】",
+      title: "題型 3-8：布斯演算法運算次數與連續 1 最佳化效益分析【期中高頻大題】",
       category: "布斯演算法效益",
       generator: function() {
         const pool = [
@@ -476,15 +476,55 @@ ${traceMd}
       title: "題型 3-5：IEEE 754 單倍精確度十進位轉 32-bit 十六進位機器碼",
       category: "浮點數編碼轉換",
       generator: function() {
-        const pool = [
-          { dec: -13.625, sign: 1, exp: 130, expHex: "82", fracBin: "10110100000000000000000", hex: "C15A0000", binary: "-1101.101" },
-          { dec: 26.5, sign: 0, exp: 131, expHex: "83", fracBin: "10101000000000000000000", hex: "41D40000", binary: "+11010.1" },
-          { dec: -0.75, sign: 1, exp: 126, expHex: "7E", fracBin: "10000000000000000000000", hex: "BF400000", binary: "-0.11" },
-          { dec: 10.25, sign: 0, exp: 130, expHex: "82", fracBin: "01001000000000000000000", hex: "41240000", binary: "+1010.01" },
-          { dec: -6.375, sign: 1, exp: 129, expHex: "81", fracBin: "10011000000000000000000", hex: "C0CC0000", binary: "-110.011" },
-          { dec: 0.5, sign: 0, exp: 126, expHex: "7E", fracBin: "00000000000000000000000", hex: "3F000000", binary: "+0.1" }
-        ];
-        return pool[Math.floor(Math.random() * pool.length)];
+        const useClassic = Math.random() < 0.25;
+        if (useClassic) {
+          const pool = [
+            { dec: -13.625, sign: 1, exp: 130, expHex: "82", fracBin: "10110100000000000000000", hex: "C15A0000", binary: "-1101.101" },
+            { dec: 26.5, sign: 0, exp: 131, expHex: "83", fracBin: "10101000000000000000000", hex: "41D40000", binary: "+11010.1" },
+            { dec: -0.75, sign: 1, exp: 126, expHex: "7E", fracBin: "10000000000000000000000", hex: "BF400000", binary: "-0.11" },
+            { dec: 10.25, sign: 0, exp: 130, expHex: "82", fracBin: "01001000000000000000000", hex: "41240000", binary: "+1010.01" },
+            { dec: -6.375, sign: 1, exp: 129, expHex: "81", fracBin: "10011000000000000000000", hex: "C0CC0000", binary: "-110.011" },
+            { dec: 0.15625, sign: 0, exp: 124, expHex: "7C", fracBin: "01000000000000000000000", hex: "3E200000", binary: "+0.00101" }
+          ];
+          return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // 動態隨機生成
+        const sign = Math.random() < 0.5 ? 1 : 0;
+        const whole = Math.floor(Math.random() * 28);
+        const denoms = [2, 4, 8, 16];
+        const denom = denoms[Math.floor(Math.random() * denoms.length)];
+        const numer = (Math.floor(Math.random() * (denom / 2)) * 2) + 1;
+        let absVal = whole + (numer / denom);
+        if (absVal === 0) absVal = 1.5;
+        const dec = sign === 1 ? -absVal : absVal;
+
+        const buf = new ArrayBuffer(4);
+        const f32 = new Float32Array(buf);
+        const u32 = new Uint32Array(buf);
+        f32[0] = dec;
+        const intVal = u32[0];
+        const hex = intVal.toString(16).padStart(8, '0').toUpperCase();
+        const bin32 = intVal.toString(2).padStart(32, '0');
+        const exp = parseInt(bin32.slice(1, 9), 2);
+        const expHex = exp.toString(16).padStart(2, '0').toUpperCase();
+        const fracBin = bin32.slice(9);
+
+        // 二進位字串產生
+        const wholeBin = Math.floor(absVal).toString(2);
+        let fracRemain = absVal - Math.floor(absVal);
+        let fracStr = "";
+        while (fracRemain > 0 && fracStr.length < 8) {
+          fracRemain *= 2;
+          if (fracRemain >= 1) {
+            fracStr += "1";
+            fracRemain -= 1;
+          } else {
+            fracStr += "0";
+          }
+        }
+        const binary = (sign === 1 ? "-" : "+") + wholeBin + "." + fracStr;
+        return { dec, sign, exp, expHex, fracBin, hex, binary };
       },
       render: function(p) {
         return `請將十進位實數 **${p.dec}** 轉換為符合 **IEEE 754 單倍精確度（Single Precision 32-bit）** 浮點數標準之機器表示法。
@@ -505,7 +545,7 @@ ${traceMd}
 1. **十進位轉二進位**：
    $$${p.dec}_{10} = ${p.binary}_2$$
 2. **二進位正規化科學記號**：
-   移位後得：$${p.sign === 1 ? "-" : "+"}1.${p.fracBin.replace(/0+$/, "")}_2 \\times 2^{${p.exp - 127}}$
+   移位後得：$${p.sign === 1 ? "-" : "+"}1.${p.fracBin.replace(/0+$/, "") || "0"}_2 \\times 2^{${p.exp - 127}}$
 3. **分解 IEEE 754 單倍精確度三大欄位**：
    - **符號位元 $S$ (1 bit)**：數值為${p.sign === 1 ? "負數" : "正數"} $\\implies S = ${p.sign}$。
    - **偏差指數 $E$ (8 bits)**：
@@ -524,14 +564,40 @@ ${traceMd}
       title: "題型 3-6：IEEE 754 十六進位機器碼還原十進位實數",
       category: "浮點數解碼還原",
       generator: function() {
-        const pool = [
-          { hex: "41C80000", dec: 25.0, sign: 0, exp: 131, realExp: 4, fracStr: "1.1001" },
-          { hex: "C0B00000", dec: -5.5, sign: 1, exp: 129, realExp: 2, fracStr: "1.011" },
-          { hex: "3F400000", dec: 0.75, sign: 0, exp: 126, realExp: -1, fracStr: "1.1" },
-          { hex: "C1A00000", dec: -20.0, sign: 1, exp: 131, realExp: 4, fracStr: "1.01" },
-          { hex: "40D00000", dec: 6.5, sign: 0, exp: 129, realExp: 2, fracStr: "1.101" }
-        ];
-        return pool[Math.floor(Math.random() * pool.length)];
+        const useClassic = Math.random() < 0.25;
+        if (useClassic) {
+          const pool = [
+            { hex: "41C80000", dec: 25.0, sign: 0, exp: 131, realExp: 4, fracStr: "1.1001" },
+            { hex: "C0B00000", dec: -5.5, sign: 1, exp: 129, realExp: 2, fracStr: "1.011" },
+            { hex: "3F400000", dec: 0.75, sign: 0, exp: 126, realExp: -1, fracStr: "1.1" },
+            { hex: "C1A00000", dec: -20.0, sign: 1, exp: 131, realExp: 4, fracStr: "1.01" },
+            { hex: "40D00000", dec: 6.5, sign: 0, exp: 129, realExp: 2, fracStr: "1.101" }
+          ];
+          return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // 動態隨機生成
+        const sign = Math.random() < 0.5 ? 1 : 0;
+        const whole = Math.floor(Math.random() * 20);
+        const denoms = [2, 4, 8];
+        const denom = denoms[Math.floor(Math.random() * denoms.length)];
+        const numer = (Math.floor(Math.random() * (denom / 2)) * 2) + 1;
+        let absVal = whole + (numer / denom);
+        if (absVal === 0) absVal = 1.5;
+        const dec = sign === 1 ? -absVal : absVal;
+
+        const buf = new ArrayBuffer(4);
+        const f32 = new Float32Array(buf);
+        const u32 = new Uint32Array(buf);
+        f32[0] = dec;
+        const intVal = u32[0];
+        const hex = intVal.toString(16).padStart(8, '0').toUpperCase();
+        const bin32 = intVal.toString(2).padStart(32, '0');
+        const exp = parseInt(bin32.slice(1, 9), 2);
+        const realExp = exp - 127;
+        const fracBin = bin32.slice(9, 17).replace(/0+$/, "");
+        const fracStr = "1." + (fracBin || "0");
+        return { hex, dec, sign, exp, realExp, fracStr };
       },
       render: function(p) {
         return `一條 32 位元 IEEE 754 單倍精確度浮點數機器碼為 **0x${p.hex}**。
@@ -581,6 +647,24 @@ ${traceMd}
             sumBin: "10.0000 * 2^1",
             normBin: "1.0000 * 2^2",
             finalDec: 4.0
+          },
+          {
+            aDec: 3.25, aBin: "1.1010 * 2^1",
+            bDec: 0.75, bBin: "1.1000 * 2^-1",
+            diffExp: 2,
+            shiftedB: "0.0110 * 2^1",
+            sumBin: "10.0000 * 2^1",
+            normBin: "1.0000 * 2^2",
+            finalDec: 4.0
+          },
+          {
+            aDec: -2.5, aBin: "-1.0100 * 2^1",
+            bDec: 0.625, bBin: "1.0100 * 2^-1",
+            diffExp: 2,
+            shiftedB: "0.0101 * 2^1",
+            sumBin: "-0.1111 * 2^1",
+            normBin: "-1.1110 * 2^0",
+            finalDec: -1.875
           }
         ];
         return pool[Math.floor(Math.random() * pool.length)];
@@ -609,6 +693,449 @@ ${traceMd}
    $\\implies (${p.normBin})_2$。
 4. **Step 4: 捨入並輸出（Round & Output）**：
    最終結果換算為十進位為 **${p.finalDec}**。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_float_mult",
+      title: "題型 3-9：IEEE 754 浮點數乘法四步驟演算法與正規化",
+      category: "浮點運算演算法",
+      generator: function() {
+        const pool = [
+          {
+            a: 0.5, b: -0.4375,
+            aBin: "1.000_2 \\times 2^{-1}", bBin: "-1.110_2 \\times 2^{-2}",
+            ea: -1, eb: -2, expSum: -3,
+            sigMult: "1.110_2",
+            needShift: "否（乘積已小於 2）",
+            pBin: "-1.110_2 \\times 2^{-3}",
+            res: -0.21875
+          },
+          {
+            a: 1.5, b: 2.0,
+            aBin: "1.100_2 \\times 2^{0}", bBin: "1.000_2 \\times 2^{1}",
+            ea: 0, eb: 1, expSum: 1,
+            sigMult: "1.100_2",
+            needShift: "否（乘積已小於 2）",
+            pBin: "1.100_2 \\times 2^{1}",
+            res: 3.0
+          },
+          {
+            a: 2.5, b: -1.25,
+            aBin: "1.010_2 \\times 2^{1}", bBin: "-1.010_2 \\times 2^{0}",
+            ea: 1, eb: 0, expSum: 1,
+            sigMult: "1.1001_2",
+            needShift: "否（乘積已小於 2）",
+            pBin: "-1.1001_2 \\times 2^{1}",
+            res: -3.125
+          },
+          {
+            a: 3.0, b: 1.5,
+            aBin: "1.100_2 \\times 2^{1}", bBin: "1.100_2 \\times 2^{0}",
+            ea: 1, eb: 0, expSum: 1,
+            sigMult: "10.010_2",
+            needShift: "是（乘積大於等於 2，右移 1 位，指數加 1 成 2）",
+            pBin: "1.001_2 \\times 2^{2}",
+            res: 4.5
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `考題對齊 Chapter 3 浮點數乘法硬體運算演算法：
+請計算兩浮點數相乘：**$A = ${p.a}$** 與 **$B = ${p.b}$**。
+- $A = ${p.aBin}$
+- $B = ${p.bBin}$
+
+**請計算：依據 IEEE 754 乘法四步驟流程，相乘完成後最終結果的十進位實數為多少？**（可帶正負號與小數點）`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.res,
+          unit: "",
+          tolerance: 0.001,
+          explanation: `
+1. **Step 1: 指數相加並扣除偏壓（Add Exponents & Subtract Bias）**：
+   真實指數相加：$E_A + E_B = (${p.ea}) + (${p.eb}) = ${p.expSum}$。
+   （若以偏差指數計算：$E_1 + E_2 - 127 = (${p.ea + 127}) + (${p.eb + 127}) - 127 = ${p.expSum + 127}$）。
+2. **Step 2: 有效數相乘（Multiply Significands）**：
+   相乘結果尾數為：$${p.sigMult}$。
+3. **Step 3: 結果正規化（Normalize）**：
+   是否需要右移調整指數：${p.needShift}。
+   正規化後科學記號為：$${p.pBin}$。
+4. **Step 4: 捨入與符號設定（Round & Sign）**：
+   符號位元 $S = S_A \\oplus S_B$。
+   最終乘積實數十進位值為 **${p.res}**。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_float_special_cases",
+      title: "題型 3-10：IEEE 754 特殊編碼與非正規化數（Denormalized）判定",
+      category: "浮點數規格判定",
+      generator: function() {
+        const pool = [
+          {
+            hex: "7F800000",
+            meaning: "+infinity",
+            aliases: ["+infinity", "+inf", "無窮大", "+無窮大", "inf", "正無窮大"],
+            expVal: 255, fracVal: "全 0", sign: 0,
+            desc: "符號 S=0，指數 E=255 (全 1)，尾數 F=0 $\\implies$ **+無窮大 (+Infinity)**"
+          },
+          {
+            hex: "FF800000",
+            meaning: "-infinity",
+            aliases: ["-infinity", "-inf", "-無窮大", "負無窮大"],
+            expVal: 255, fracVal: "全 0", sign: 1,
+            desc: "符號 S=1，指數 E=255 (全 1)，尾數 F=0 $\\implies$ **-無窮大 (-Infinity)**"
+          },
+          {
+            hex: "7FC00000",
+            meaning: "nan",
+            aliases: ["nan", "not a number", "非數值", "非數"],
+            expVal: 255, fracVal: "非全 0 (最高位為 1)", sign: 0,
+            desc: "指數 E=255 (全 1)，且尾數 F≠0 $\\implies$ **非數值 (NaN, Not a Number)**"
+          },
+          {
+            hex: "80000000",
+            meaning: "-0",
+            aliases: ["-0", "-0.0", "負零"],
+            expVal: 0, fracVal: "全 0", sign: 1,
+            desc: "符號 S=1，指數 E=0，尾數 F=0 $\\implies$ **負零 (-0)**"
+          },
+          {
+            hex: "00400000",
+            meaning: "denormalized",
+            aliases: ["denormalized", "subnormal", "非正規化數", "非正規化", "denorm"],
+            expVal: 0, fracVal: "非全 0", sign: 0,
+            desc: "指數 E=0，且尾數 F≠0 $\\implies$ **非正規化數（Denormalized / Subnormal）**。此模式下前導無隱含 1（為 0.F），真實指數固定為 $1 - 127 = -126$。"
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `在 32 位元 IEEE 754 單倍精確度標準中，給定一條特殊的十六進位機器碼 **0x${p.hex}**。
+
+**請判定：此機器碼在 IEEE 754 標準中代表何種數值狀態？**
+（請填入以下關鍵字之一：\`+Infinity\`、\`-Infinity\`、\`NaN\`、\`-0\`、\`+0\` 或 \`Denormalized\`）`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.meaning,
+          altValue: p.aliases,
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **分析機器碼 0x${p.hex} 之欄位**：
+   - 符號位元 $S = ${p.sign}$
+   - 指數欄位 $E = ${p.expVal}$
+   - 尾數欄位 $F$：${p.fracVal}
+2. **IEEE 754 特殊狀況判定規則**：
+   - 當 $E = 255$ 且 $F = 0$：表示 $\\pm\\infty$。
+   - 當 $E = 255$ 且 $F \\neq 0$：表示 $\\text{NaN}$（非數值，如 0/0）。
+   - 當 $E = 0$ 且 $F = 0$：表示 $\\pm 0$。
+   - 當 $E = 0$ 且 $F \\neq 0$：表示 **非正規化數（Denormalized）**。
+3. **結論**：
+   ${p.desc}
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_float_double_prec",
+      title: "題型 3-11：IEEE 754 雙倍精確度（Double Precision 64-bit）偏壓與欄位編碼",
+      category: "浮點數規格判定",
+      generator: function() {
+        const pool = [
+          {
+            dec: -13.625,
+            sign: 1,
+            realExp: 3,
+            bias: 1023,
+            biasedExp: 1026,
+            expHex: "402",
+            fracHex: "B400000000000"
+          },
+          {
+            dec: 26.5,
+            sign: 0,
+            realExp: 4,
+            bias: 1023,
+            biasedExp: 1027,
+            expHex: "403",
+            fracHex: "A800000000000"
+          },
+          {
+            dec: 0.75,
+            sign: 0,
+            realExp: -1,
+            bias: 1023,
+            biasedExp: 1022,
+            expHex: "3FE",
+            fracHex: "8000000000000"
+          },
+          {
+            dec: -0.125,
+            sign: 1,
+            realExp: -3,
+            bias: 1023,
+            biasedExp: 1020,
+            expHex: "3FC",
+            fracHex: "0000000000000"
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `考題涉及 64 位元 IEEE 754 **雙倍精確度（Double Precision）** 浮點數表示法：
+請將十進位實數 **${p.dec}** 轉換為 64 位元雙倍精確度浮點數。
+
+**請計算：在此 64 位元標準下，該數值的 11 位元偏差指數（Biased Exponent $E$）之十進位整數值為何？**`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.biasedExp,
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **IEEE 754 雙倍精確度規格欄位**：
+   - 符號位元 $S$：1 bit
+   - 指數欄位 $E$：**11 bits**，偏壓 $\\text{Bias} = 2^{11-1} - 1 = 1023$
+   - 尾數欄位 $F$：**52 bits**
+2. **數值二進位科學記號化**：
+   $$${p.dec}_{10} \\implies \\text{真實指數 Real Exp} = ${p.realExp}$$
+3. **計算偏差指數 $E$**：
+   $$E = \\text{Real Exp} + \\text{Bias} = ${p.realExp} + 1023 = ${p.biasedExp}$$
+   （轉換為 11 位元十六進位為 \`0x${p.expHex}\`）。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_half_precision",
+      title: "題型 3-12：16 位元半精度浮點數加法手算與 GRS 捨入判定【課後習題 3.29 真題】",
+      category: "浮點運算演算法",
+      generator: function() {
+        const pool = [
+          {
+            aDec: 26.125,
+            aBin: "+1.1010001000_2 \\times 2^4",
+            aExp: 19,
+            bDec: 0.4150390625,
+            bBin: "+1.1010100100_2 \\times 2^{-2}",
+            bExp: 13,
+            diffExp: 6,
+            shiftedB: "0.0000011010",
+            grs: "1 0 1",
+            roundAction: "進位 (Round Up)",
+            finalFrac: "1010100011",
+            finalHex: "4EA3",
+            finalDec: 26.546875
+          },
+          {
+            aDec: 12.5,
+            aBin: "+1.1001000000_2 \\times 2^3",
+            aExp: 18,
+            bDec: 0.1875,
+            bBin: "+1.1000000000_2 \\times 2^{-3}",
+            bExp: 12,
+            diffExp: 6,
+            shiftedB: "0.0000011000",
+            grs: "0 0 0",
+            roundAction: "捨去 (Round Down)",
+            finalFrac: "1001000110",
+            finalHex: "4A46",
+            finalDec: 12.6875
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `依據課後習題 3.29 與 16 位元半精度浮點數格式規格（1 bit Sign, 5 bits Exponent with Bias=15, 10 bits Fraction）：
+請手算兩浮點數相加：**$A = ${p.aDec}$** 與 **$B = ${p.bDec}$**。
+- $A$ 之二進位表示：${p.aBin}$（偏差指數 $E = ${p.aExp}$）
+- $B$ 之二進位表示：${p.bBin}$（偏差指數 $E = ${p.bExp}$）
+
+**請計算：將兩數對齊指數相加並依據「向最近偶數捨入」（Round to nearest even）規則處理 Guard、Round 與 Sticky 位元後，最終結果的 16 位元十六進位機器碼為何？**（格式如 \`0x${p.finalHex}\` 或 \`${p.finalHex}\`）`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: `0x${p.finalHex}`,
+          altValue: [p.finalHex, String(p.finalDec)],
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **Step 1: 比較並對齊指數（Align Exponents）**：
+   指數差值為 $E_A - E_B = ${p.diffExp}$。將數值 $B$ 之假數向右位移 ${p.diffExp} 位元：
+   - 移位後保留 10 位元假數為：\`${p.shiftedB}\`
+   - 移出之 Guard (G)、Round (R) 與 Sticky (S) 位元判定為：\`${p.grs}\`。
+2. **Step 2: 假數相加（Add Significands）**：
+   將 $A$ 假數與對齊後 $B$ 假數相加，保留 GRS 位元。
+3. **Step 3: 規格化與向最近偶數捨入（Normalize & Round）**：
+   - 因 GRS 為 \`${p.grs}\`，嚴格大於 0.5 ULP，執行**${p.roundAction}**。
+   - 捨入後假數欄位為：\`${p.finalFrac}\`。
+4. **Step 4: 組裝 16 位元機器碼**：
+   - 符號位元 $S = 0$
+   - 指數欄位 $E = ${p.aExp} = ${(p.aExp).toString(2).padStart(5, '0')}_2$
+   - 假數欄位 $F = ${p.finalFrac}$
+   - 合併機器碼：\`0 ${(p.aExp).toString(2).padStart(5, '0')} ${p.finalFrac}\` $\\implies$ **0x${p.finalHex}**（十進位值為 **${p.finalDec}**）。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_float_associative",
+      title: "題型 3-13：浮點數乘法結合律失效與指數下溢分析【課後習題 3.35-3.37 真題】",
+      category: "浮點數規格判定",
+      generator: function() {
+        const pool = [
+          {
+            caseA: "(A × B) × C",
+            caseB: "A × (B × C)",
+            descA: "在計算 (A × B) 時，指數相加 (-9) + (-8) = -17，低於半精度最小規格化指數上限 (-14)，引發指數下溢（Underflow），硬體截斷為 0，最終 0 × C = 0",
+            descB: "在計算 A × (B × C) 時，先乘較大數，中間指數維持在 -1，再乘以 A 指數為 -9，未發生下溢，成功保留有效位數得 2.2907 × 10^-3",
+            isEqual: "否",
+            aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+          }
+        ];
+        return pool[0];
+      },
+      render: function(p) {
+        return `依據課後習題 3.35、3.36 與 3.37 之深入探討：
+在 16 位元半精度浮點數硬體架構下，給定三個數值：
+- $A = 3.41796875 \\times 10^{-3} = 1.75 \\times 2^{-9}$
+- $B = 6.34765625 \\times 10^{-3} = 1.625 \\times 2^{-8}$
+- $C = 1.05625 \\times 10^2 = 1.650390625 \\times 2^6$
+
+**請判定：運算式 $(A \\times B) \\times C = A \\times (B \\times C)$ 在浮點數電腦系統中是否恆成立？**（請回答：\`是\` 或 \`否\`）`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: "否",
+          altValue: p.aliases,
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **核心原則**：浮點數電腦運算**不滿足結合律（Floating-point arithmetic is NOT associative）**！
+2. **第一種計算順序 $(A \\times B) \\times C$（習題 3.35）**：
+   - 先算 $A \\times B$：指數相加 $(-9) + (-8) = -17$。
+   - 由於 16 位元半精度規格化數的真實指數最小為 $1 - 15 = -14$。
+   - 指數 $-17 < -14$，發生**指數下溢（Exponent Underflow）**，數值歸零為 0。
+   - 接著計算 $0 \\times C = 0$。
+3. **第二種計算順序 $A \\times (B \\times C)$（習題 3.36）**：
+   - 先算 $B \\times C$：指數相加 $(-8) + 6 = -2$（在合法範圍內）。
+   - 再乘以 $A$：指數相加 $(-2) + (-9) + 1 = -9$（在合法範圍內）。
+   - 全程皆在規格化數之表示範圍內，得到非零精確結果 $\\approx 2.2907 \\times 10^{-3}$。
+4. **結論**：兩者結果一為 $0$，一為 $2.2907 \\times 10^{-3}$，等式**不成立**。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_mult_hardware_trace",
+      title: "題型 3-14：乘法器硬體追蹤表與位移方向分析【課後習題 3.12/3.13 真題】",
+      category: "算術硬體設計",
+      generator: function() {
+        const pool = [
+          {
+            mOct: "62", qOct: "12",
+            mDec: 50, qDec: 10,
+            bits: 6,
+            prodDec: 500,
+            prodBin12: "000111110100",
+            prodOct: "764",
+            fig33Shift: "被乘數向左位移、乘數向右位移",
+            fig35Shift: "乘積暫存器整組向右位移",
+            cycles: 6
+          },
+          {
+            mOct: "45", qOct: "13",
+            mDec: 37, qDec: 11,
+            bits: 6,
+            prodDec: 407,
+            prodBin12: "000110010111",
+            prodOct: "627",
+            fig33Shift: "被乘數向左位移、乘數向右位移",
+            fig35Shift: "乘積暫存器整組向右位移",
+            cycles: 6
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `對照教材圖 3.3（第一版乘法硬體）與圖 3.5（最佳化乘法硬體）：
+計算無號整數八進位乘法：**$M = ${p.mOct}_8$**（被乘數）與 **$Q = ${p.qOct}_8$**（乘數）。
+- 被乘數十進位：${p.mDec}$
+- 乘數十進位：${p.qDec}$
+
+**請計算：此硬體運算執行 ${p.cycles} 輪後，最終 12 位元乘積的十進位整數值為多少？**`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.prodDec,
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **數值二進位表示**：
+   - 被乘數 $M = ${p.mDec}_{10} = ${p.mOct}_8 = ${(p.mDec).toString(2)}_2$
+   - 乘數 $Q = ${p.qDec}_{10} = ${p.qOct}_8 = ${(p.qDec).toString(2)}_2$
+2. **硬體架構位移特徵比較**：
+   - **圖 3.3（第一版硬體）**：${p.fig33Shift}，ALU 與乘積暫存器寬度為 2n 位元。
+   - **圖 3.5（最佳化硬體）**：${p.fig35Shift}，被乘數固定 n 位元，乘積暫存器共用乘數空間。
+3. **運算結算**：
+   最終 12 位元乘積為 \`${p.prodBin12}\`$_2 = ${p.prodOct}_8 = $ **${p.prodDec}**。
+          `
+        };
+      }
+    },
+    {
+      id: "ch3_div_hardware_trace",
+      title: "題型 3-15：第一版除法器復原法（Restoring Division）週期推導【課後習題 3.18 真題】",
+      category: "算術硬體設計",
+      generator: function() {
+        const pool = [
+          {
+            dividend: 60, divisor: 17,
+            divOctA: "74", divOctB: "21",
+            quotient: 3, remainder: 9,
+            rounds: 7,
+            modeDesc: "八進位情境 (74_8 ÷ 21_8 = 60 ÷ 17)"
+          },
+          {
+            dividend: 74, divisor: 21,
+            divOctA: "74", divOctB: "21",
+            quotient: 3, remainder: 11,
+            rounds: 8,
+            modeDesc: "純十進位情境 (74 ÷ 21)"
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `依據課後習題 3.18 與圖 3.8 / 3.10 之第一版除法器硬體架構（Restoring Division，共執行 $n+1$ 輪）：
+被除數為 **${p.dividend}**，除數為 **${p.divisor}**（${p.modeDesc}）。
+
+**請計算：此除法運算在完成全部迭代後的商數（Quotient）整數值為多少？**`;
+      },
+      solve: function(p) {
+        return {
+          correctValue: p.quotient,
+          altValue: [String(p.quotient)],
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **第一版除法器三步驟演算法**：
+   - **步驟 1**：餘數暫存器減去除數（$\\text{Remainder} = \\text{Remainder} - \\text{Divisor}$）。
+   - **步驟 2**：
+     - 若 $\\text{Remainder} \\ge 0$：商數暫存器向左位移，最低位 $Q_0$ 補 1。
+     - 若 $\\text{Remainder} < 0$：加回除數**復原**（Restore），商數向左位移，最低位 $Q_0$ 補 0。
+   - **步驟 3**：除數暫存器向右位移 1 位元。
+2. **迭代輪數與結算**：
+   共執行 ${p.rounds} 輪（$n+1$ 輪），最終運算結果為：
+   - **商數（Quotient）**：**${p.quotient}**
+   - **餘數（Remainder）**：**${p.remainder}**（驗算：${p.divisor} × ${p.quotient} + ${p.remainder} = ${p.divisor * p.quotient + p.remainder} = ${p.dividend}）。
           `
         };
       }

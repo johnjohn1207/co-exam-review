@@ -306,6 +306,39 @@ window.CO_INTERACTIVE = {
           </div>
           <div id="fpFormulaExplain" class="formula-math-box"></div>
         </div>
+
+        <!-- 浮點數雙向轉換即時速刷特訓特區 (Float Conversion Quick Drill) -->
+        <div class="fp-drill-card" style="margin-top: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <div style="font-size: 1.05rem; font-weight: 700; color: var(--primary);">浮點數雙向轉換即時速刷特訓區 (Float Conversion Quick Drill)</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">支援十進位與十六進位雙向盲測、隨機動態出題、答案即時比對與上位元面板連動</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="fpDrillModeDecToHex" class="lab-station-pill active" style="border-radius: 6px;">十進位轉十六進位</button>
+              <button id="fpDrillModeHexToDec" class="lab-station-pill" style="border-radius: 6px;">十六進位還原十進位</button>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <span id="fpDrillPromptTag" class="tag-badge badge-primary">題目產生中...</span>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">累計答對：<strong id="fpDrillScore" style="color: var(--success);">0</strong> 題</span>
+            </div>
+            <div id="fpDrillQuestionText" style="font-size: 1.05rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem; line-height: 1.6;"></div>
+
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="fpDrillInput" class="input-ctrl" placeholder="請在此輸入您的計算答案..." style="flex: 1; min-width: 220px; font-family: var(--font-mono); font-size: 1rem;" />
+              <button id="fpDrillBtnVerify" class="action-btn btn-primary">送出驗證</button>
+              <button id="fpDrillBtnNew" class="action-btn btn-secondary">換一題（隨機出題）</button>
+              <button id="fpDrillBtnLoadInspector" class="action-btn btn-secondary">載入上位元面板</button>
+            </div>
+
+            <div id="fpDrillFeedback" style="margin-top: 1rem; display: none;"></div>
+          </div>
+
+          <div id="fpDrillExplanation" style="display: none; background: #090d16; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; font-size: 0.9rem; line-height: 1.7;"></div>
+        </div>
       </section>
 
       <!-- 站點 3：1 位元 ALU 訊號通路互動模擬器 -->
@@ -906,6 +939,7 @@ window.CO_INTERACTIVE = {
     init: function() {
       this.bindEvents();
       this.setFromDecimal(-13.625);
+      this.drill.init(this);
     },
 
     bindEvents: function() {
@@ -1124,6 +1158,209 @@ window.CO_INTERACTIVE = {
         }
         if (window.CO_SOLVER && typeof window.CO_SOLVER.renderMath === "function") {
           window.CO_SOLVER.renderMath(elFormulaExplain);
+        }
+      }
+    },
+
+    // 浮點數雙向轉換即時速刷特訓器
+    drill: {
+      mode: "decToHex",
+      currentQ: null,
+      score: 0,
+
+      init: function(parent) {
+        this.parent = parent;
+        this.bindEvents();
+        this.generateNew();
+      },
+
+      bindEvents: function() {
+        const btnDecToHex = document.getElementById("fpDrillModeDecToHex");
+        const btnHexToDec = document.getElementById("fpDrillModeHexToDec");
+        const btnVerify = document.getElementById("fpDrillBtnVerify");
+        const btnNew = document.getElementById("fpDrillBtnNew");
+        const btnLoad = document.getElementById("fpDrillBtnLoadInspector");
+        const input = document.getElementById("fpDrillInput");
+
+        if (btnDecToHex) {
+          btnDecToHex.addEventListener("click", () => {
+            this.mode = "decToHex";
+            btnDecToHex.classList.add("active");
+            btnHexToDec.classList.remove("active");
+            this.generateNew();
+          });
+        }
+
+        if (btnHexToDec) {
+          btnHexToDec.addEventListener("click", () => {
+            this.mode = "hexToDec";
+            btnHexToDec.classList.add("active");
+            btnDecToHex.classList.remove("active");
+            this.generateNew();
+          });
+        }
+
+        if (btnVerify) {
+          btnVerify.addEventListener("click", () => this.verify());
+        }
+
+        if (input) {
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") this.verify();
+          });
+        }
+
+        if (btnNew) {
+          btnNew.addEventListener("click", () => this.generateNew());
+        }
+
+        if (btnLoad) {
+          btnLoad.addEventListener("click", () => {
+            if (!this.currentQ) return;
+            if (this.parent) {
+              this.parent.setFromDecimal(this.currentQ.dec);
+              const board = document.getElementById("fpBitTilesContainer");
+              if (board && typeof board.scrollIntoView === "function") {
+                board.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            }
+          });
+        }
+      },
+
+      generateNew: function() {
+        const sign = Math.random() < 0.5 ? 1 : 0;
+        const whole = Math.floor(Math.random() * 28);
+        const denoms = [2, 4, 8, 16];
+        const denom = denoms[Math.floor(Math.random() * denoms.length)];
+        const numer = (Math.floor(Math.random() * (denom / 2)) * 2) + 1;
+        let absVal = whole + (numer / denom);
+        if (absVal === 0) absVal = 1.5;
+        const dec = sign === 1 ? -absVal : absVal;
+
+        const buf = new ArrayBuffer(4);
+        const f32 = new Float32Array(buf);
+        const u32 = new Uint32Array(buf);
+        f32[0] = dec;
+        const intVal = u32[0];
+        const hex = "0x" + intVal.toString(16).padStart(8, '0').toUpperCase();
+        const hexClean = intVal.toString(16).padStart(8, '0').toUpperCase();
+        const bin32 = intVal.toString(2).padStart(32, '0');
+        const s = bin32[0];
+        const exp = parseInt(bin32.slice(1, 9), 2);
+        const realExp = exp - 127;
+        const fracBin = bin32.slice(9);
+
+        const wholeBin = Math.floor(absVal).toString(2);
+        let fracRemain = absVal - Math.floor(absVal);
+        let fracStr = "";
+        while (fracRemain > 0 && fracStr.length < 8) {
+          fracRemain *= 2;
+          if (fracRemain >= 1) {
+            fracStr += "1";
+            fracRemain -= 1;
+          } else {
+            fracStr += "0";
+          }
+        }
+        const binary = (sign === 1 ? "-" : "+") + wholeBin + "." + fracStr;
+
+        this.currentQ = {
+          dec, sign, hex, hexClean, s, exp, realExp, fracBin, binary
+        };
+
+        const elTag = document.getElementById("fpDrillPromptTag");
+        const elText = document.getElementById("fpDrillQuestionText");
+        const elInput = document.getElementById("fpDrillInput");
+        const elFeedback = document.getElementById("fpDrillFeedback");
+        const elExpl = document.getElementById("fpDrillExplanation");
+
+        if (elInput) elInput.value = "";
+        if (elFeedback) elFeedback.style.display = "none";
+        if (elExpl) elExpl.style.display = "none";
+
+        if (this.mode === "decToHex") {
+          if (elTag) elTag.textContent = "模式 A：十進位實數轉 32 位元十六進位機器碼";
+          if (elText) elText.innerHTML = "請將十進位實數 <span style=\"color: #38bdf8; font-size: 1.25rem; font-weight: 700;\">" + dec + "</span> 轉換為 IEEE 754 單倍精確度之 32 位元十六進位機器碼（Hexadecimal）：";
+          if (elInput) elInput.placeholder = "例如：" + hex + " 或 " + hexClean;
+        } else {
+          if (elTag) elTag.textContent = "模式 B：32 位元十六進位機器碼還原十進位實數";
+          if (elText) elText.innerHTML = "給定 IEEE 754 單倍精確度機器碼 <span style=\"color: #4ade80; font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700;\">" + hex + "</span>，請計算其所代表的十進位實數（Decimal Float）：";
+          if (elInput) elInput.placeholder = "例如：" + dec;
+        }
+      },
+
+      verify: function() {
+        if (!this.currentQ) return;
+        const elInput = document.getElementById("fpDrillInput");
+        const elFeedback = document.getElementById("fpDrillFeedback");
+        const elExpl = document.getElementById("fpDrillExplanation");
+        const elScore = document.getElementById("fpDrillScore");
+
+        const userVal = elInput ? elInput.value.trim() : "";
+        if (!userVal) {
+          if (elFeedback) {
+            elFeedback.style.display = "block";
+            elFeedback.innerHTML = "<span style=\"color: var(--warning); font-weight: 600;\">請先輸入您的作答答案！</span>";
+          }
+          return;
+        }
+
+        let isCorrect = false;
+        const q = this.currentQ;
+
+        if (this.mode === "decToHex") {
+          const cleanUser = userVal.replace(/^0x/i, "").toUpperCase();
+          if (cleanUser === q.hexClean) {
+            isCorrect = true;
+          }
+        } else {
+          const userNum = parseFloat(userVal);
+          if (!isNaN(userNum) && Math.abs(userNum - q.dec) < 0.001) {
+            isCorrect = true;
+          }
+        }
+
+        if (isCorrect) {
+          this.score++;
+          if (elScore) elScore.textContent = this.score;
+          if (elFeedback) {
+            elFeedback.style.display = "block";
+            elFeedback.innerHTML = "<div style=\"padding: 0.6rem 0.9rem; background: var(--success-bg); border: 1px solid var(--success); border-radius: var(--radius); color: var(--success); font-weight: 700;\">驗證正確！答案確實為 " + (this.mode === "decToHex" ? q.hex : q.dec) + "。</div>";
+          }
+        } else {
+          if (elFeedback) {
+            elFeedback.style.display = "block";
+            elFeedback.innerHTML = "<div style=\"padding: 0.6rem 0.9rem; background: var(--error-bg); border: 1px solid var(--error); border-radius: var(--radius); color: var(--error); font-weight: 700;\">未通過！正確答案應為 " + (this.mode === "decToHex" ? q.hex : q.dec) + "。可點擊下方查看完整推導。</div>";
+          }
+        }
+
+        if (elExpl) {
+          elExpl.style.display = "block";
+          const eBin = q.exp.toString(2).padStart(8, '0');
+          const sBin = q.s;
+          const fBin = q.fracBin;
+
+          elExpl.innerHTML = `
+            <div style="font-weight: 700; color: var(--primary); margin-bottom: 0.6rem;">逐步拆解與推導過程：</div>
+            <ol style="margin-left: 1.25rem; color: var(--text-muted); line-height: 1.8;">
+              <li><strong>十進位化為二進位</strong>：$${q.dec}_{10} = ${q.binary}_2$</li>
+              <li><strong>二進位正規化科學記號</strong>：$${q.sign === 1 ? "-" : "+"}1.${q.fracBin.replace(/0+$/, "") || "0"}_2 \\times 2^{${q.realExp}}$</li>
+              <li><strong>三大欄位拆解</strong>：
+                <ul style="margin-left: 1.25rem;">
+                  <li>符號位元 $S$：${q.sign === 1 ? "負數 (S=1)" : "正數 (S=0)"}</li>
+                  <li>偏差指數 $E$：$\\text{Real Exp} + 127 = ${q.realExp} + 127 = ${q.exp} = ${eBin}_2$</li>
+                  <li>尾數欄位 $F$（23 bits）：去掉隱含 1，取小數為 <code>${fBin}</code></li>
+                </ul>
+              </li>
+              <li><strong>32 位元機器碼組裝</strong>：
+                <code>${sBin} ${eBin} ${fBin.slice(0, 7)} ${fBin.slice(7, 15)} ${fBin.slice(15, 23)}</code> $\\implies$ <strong style="color: #38bdf8;">${q.hex}</strong>
+              </li>
+            </ol>
+          `;
+          if (window.CO_SOLVER && typeof window.CO_SOLVER.renderMath === "function") {
+            window.CO_SOLVER.renderMath(elExpl);
+          }
         }
       }
     }

@@ -766,7 +766,108 @@ fib_return:
             <li><strong>重點解釋「為何第一次結果放在 $s0」</strong>：向鏡頭明確指出若不移至 <code>$s0</code>，第二次呼叫 <code>jal fib</code> 會把 <code>$v0</code> 覆寫，造成計算錯誤。</li>
             <li><strong>發音與文法不計分</strong>：專注於邏輯說明與程式對齊，保持冷靜分析的口吻即可。</li>
           </ul>
-        </div>
+        
+        <h3 style="color: #fb7185; font-size: 1.15rem; margin: 2rem 0 0.75rem 0;">六、期中考筆試手寫 5 大致命陷阱與命題形式深度解剖【手寫考試必抓分】</h3>
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; line-height: 1.8;">
+          <p style="color: var(--text-main); font-weight: 700; margin-bottom: 1rem;">
+            作業二的雙遞迴（Double Recursion）是期中考「MIPS 組合語言手寫題」出題率極高的核心題材。教授在筆試改考卷時，專門針對以下 5 個觀念細節逐行扣分：
+          </p>
+
+          <!-- 考點 1 -->
+          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f43f5e;">
+            <div style="font-weight: 700; color: #fb7185; font-size: 1rem; margin-bottom: 0.5rem;">
+              致命考點 1：Non-leaf Procedure 的 $ra 覆寫與返回位址遺失（死迴圈陷阱）
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              <ul style="margin-left: 1.25rem;">
+                <li><strong>教授考法</strong>：給一段省略了 <code>sw $ra, 8($sp)</code> 的遞迴代碼，問程式執行後會產生何種致命錯誤？</li>
+                <li><strong>根本原因</strong>：若副程式內部有 <code>jal</code>（Non-leaf），<code>jal fib</code> 會把硬體 PC+4 強制寫入 <code>$ra</code>。若沒有在進入時把呼叫端（如 main 或上一層）的 <code>$ra</code> 推入堆疊保護，當執行 <code>jr $ra</code> 時，<code>$ra</code> 永遠指在 <code>jal fib</code> 的下一行，導致程式永遠無法返回上一層，陷入永久死迴圈！</li>
+                <li><strong>手寫黃金準則</strong>：只要副程式內部有任何 <code>jal</code>，Prologue 必須第一時間 <code>sw $ra, offset($sp)</code>，Epilogue 必須 <code>lw $ra, offset($sp)</code>。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 考點 2 -->
+          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f59e0b;">
+            <div style="font-weight: 700; color: #f59e0b; font-size: 1rem; margin-bottom: 0.5rem;">
+              致命考點 2：引數 $a0 被子呼叫污染，第二次呼叫前漏寫 lw $a0（邏輯全毀陷阱）
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              <ul style="margin-left: 1.25rem;">
+                <li><strong>常見錯誤寫法</strong>：
+                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #f87171; margin: 0.4rem 0;">
+addi $a0, $a0, -1
+jal  fib               # 計算 fib(n - 1)
+addi $a0, $a0, -2      # 致命錯誤！此時 $a0 已經被子遞迴改得面目全非！
+jal  fib</pre>
+                </li>
+                <li><strong>教授改卷標準</strong>：在呼叫 <code>fib(n - 2)</code> 前，<strong>必須先自堆疊還原原始 $n$</strong>！
+                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #4ade80; margin: 0.4rem 0;">
+lw   $a0, 4($sp)       # 關鍵！載回本層進入時保存的原始引數 n
+addi $a0, $a0, -2      # 正確計算 n - 2
+jal  fib</pre>
+                  教授改考卷時必定會特別檢查這行 <code>lw $a0</code> 有沒有寫，漏寫直接扣大分！
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 考點 3 -->
+          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #38bdf8;">
+            <div style="font-weight: 700; color: #38bdf8; font-size: 1rem; margin-bottom: 0.5rem;">
+              致命考點 3：雙遞迴回傳值覆寫與 Callee-Saved 暫存器約定（$s0 vs. $v0）
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              <ul style="margin-left: 1.25rem;">
+                <li><strong>衝突點</strong>：第一次呼叫 <code>jal fib</code> 的回傳值放在 <code>$v0</code>。當執行第二次 <code>jal fib</code> 時，第二次的回傳值會把 <code>$v0</code> 覆寫。</li>
+                <li><strong>若使用 $s0 暫存</strong>：MIPS 約定規定 <code>$s0-$s7</code> 為 <strong>Callee-Saved（被呼叫端負責保護）</strong>。如果你在 <code>fib</code> 中動用了 <code>$s0</code>，你就有義務在進入時 <code>sw $s0, 0($sp)</code>，離開時 <code>lw $s0, 0($sp)</code>！</li>
+                <li><strong>未保護的後果</strong>：外層呼叫端（如 main 函式中計數的迴圈變數 <code>i</code>）若正好使用 <code>$s0</code>，其數值會被子程序強制竄改，導致 main 函式的輸出迴圈失控。</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 考點 4 -->
+          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #c084fc;">
+            <div style="font-weight: 700; color: #c084fc; font-size: 1rem; margin-bottom: 0.5rem;">
+              致命考點 4：Base Case（n < 2）堆疊指標失衡（Stack Leak 記憶體洩漏）
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              <ul style="margin-left: 1.25rem;">
+                <li><strong>情境 A（先配置堆疊才檢查 Base Case）</strong>：
+                  若執行了 <code>addi $sp, $sp, -12</code> 後才檢查 <code>bne $t0, $zero, base</code>。命中 Base Case 時，<strong>絕對不能直接 <code>jr $ra</code></strong>！必須跳轉到結尾還原暫存器並執行 <code>addi $sp, $sp, 12</code> 才能 return！否則每次命中 Base Case 就遺留 12 bytes 垃圾在堆疊上。
+                </li>
+                <li><strong>情境 B（最佳化：先檢查 Base Case 才配置堆疊）</strong>：
+                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #a5f3fc; margin: 0.4rem 0;">
+slti $t0, $a0, 2
+beq  $t0, $zero, recursive_step
+move $v0, $a0          # n &lt; 2: 直接回傳 n
+jr   $ra               # 此時未配置堆疊，可直接返回！</pre>
+                  在手寫比較題中，情境 B 避免了葉端（Leaf Nodes）不必要的 6 次記憶體存取（sw/lw），在 $n$ 較大時執行效率大幅超越情境 A！
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 考點 5 -->
+          <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #10b981;">
+            <div style="font-weight: 700; color: #10b981; font-size: 1rem; margin-bottom: 0.5rem;">
+              致命考點 5：手寫 Trace 題型：特定 n（以 F(3) 為例）的堆疊深度與呼叫次數推算
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              <ul style="margin-left: 1.25rem;">
+                <li><strong>呼叫次數公式</strong>：計算 $F(n)$ 的總函式呼叫次數為 $C(n) = 2 \times F(n + 1) - 1$。
+                  <br>以 $F(3)$ 為例：$F(4) = 3 \implies 2 \times 3 - 1 = $ <strong>5 次呼叫</strong>（$F(3) \to F(2) \to F(1), F(0)$ 以及 $F(1)$）。
+                </li>
+                <li><strong>最大堆疊訊框深度</strong>：沿著左子樹最深路徑生長，最大深度為 $n$ 個訊框。
+                  <br>以 $F(3)$ 為例：最大深度為 <strong>3 個訊框</strong>（$F(3) \to F(2) \to F(1)$），共佔用 $3 \times 12 = $ <strong>36 位元組</strong>！
+                </li>
+                <li><strong>堆疊指標變化</strong>：初始 $sp$ 為 <code>0x7FFFF000</code>，在最大深度時 $sp = \text{0x7FFFF000} - 36 = $ <code>0x7FFFEFDC</code>。
+                </li>
+              </ul>
+            </div>
+          </div>
+
+        </div></div>
       </div>
     </div>
   `;
