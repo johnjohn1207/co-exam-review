@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function() {
   renderCalculationArena();
   renderTranslationLab();
   renderInteractiveLab();
+  renderTeacherCuratedArena();
   renderAssignmentsLab();
   initMockExam();
   renderExpansionGuide();
@@ -1432,4 +1433,123 @@ function copyToClipboard(btn) {
   }).catch(err => {
     console.error("Clipboard copy error:", err);
   });
+}
+
+
+// 渲染老師指定習題動態變種專區 (Teacher Curated Exercise Arena)
+function renderTeacherCuratedArena() {
+  const container = document.getElementById("teacherCuratedContainer");
+  if (!container || !window.CO_TEACHER_EXERCISES) return;
+
+  let html = `
+    <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--primary);">
+      <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <h2 class="card-title" style="color: var(--primary);">老師指定勾選習題動態變種專區 (Curated Exercise Variants)</h2>
+          <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+            精確對齊 Chapter 3 老師指定勾選之 7 大核心習題（3.12、3.13、3.18、3.29、3.35、3.36、3.37）。每題皆支援<strong>隨機動態數值生成</strong>與<strong>完整週期追蹤詳解</strong>。
+          </div>
+        </div>
+        <span class="tag-badge badge-primary">老師指定 7 大真題</span>
+      </div>
+      <div style="margin-top: 1rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-muted); background: var(--bg-secondary); padding: 1rem 1.25rem; border-radius: var(--radius);">
+        <strong>動態變種練習指南：</strong>
+        點擊每道題目右上角的「換一題（隨機數值）」按鈕，系統將自動隨機抽取全新數值參數，並由底層硬體狀態機動態推導產生完整的週期狀態追蹤表（包含暫存器二進位排列、位移方向、GRS 位元判定與計算結果），供您進行高強度反覆刷題！
+      </div>
+    </div>
+    <div id="teacherCardsList"></div>
+  `;
+
+  container.innerHTML = html;
+  const listContainer = document.getElementById("teacherCardsList");
+  if (!listContainer) return;
+
+  window.CO_TEACHER_EXERCISES.forEach((exDef) => {
+    const card = document.createElement("div");
+    card.className = "card calc-card-item";
+    card.style.marginBottom = "1.5rem";
+    card.id = `teacher_card_${exDef.id}`;
+
+    let instance = window.CO_SOLVER.instantiateQuestion(exDef);
+
+    const renderCardContent = () => {
+      card.innerHTML = `
+        <div class="card-header" style="flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span class="tag-badge tag-hw1" style="font-weight: 700;">${exDef.originalNo}</span>
+            <span class="badge badge-primary">${exDef.category}</span>
+            <h3 class="card-title" style="font-size: 1.05rem;">${exDef.title}</h3>
+          </div>
+          <button class="action-btn btn-secondary btn-reroll" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+            換一題（隨機數值）
+          </button>
+        </div>
+
+        <div class="problem-description" style="margin: 1.25rem 0; font-size: 0.95rem; line-height: 1.7;">
+          ${formatMarkdown(instance.renderedText)}
+        </div>
+
+        <div class="answer-action-bar">
+          <input type="text" class="input-ctrl user-ans-input" placeholder="鍵入您的計算答案..." style="width: 240px; font-family: var(--font-mono); font-size: 0.95rem;" />
+          <button class="action-btn btn-primary btn-submit-ans">送出驗證</button>
+          <span class="ans-feedback" style="font-size: 0.9rem; font-weight: 600; display: none;"></span>
+        </div>
+
+        <div class="solution-box details-box" style="margin-top: 1.25rem;">
+          <div class="solution-toggle" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.9rem; background: var(--bg-secondary); border-radius: var(--radius);">
+            <span style="font-weight: 700; color: var(--primary);">查看詳細步驟、硬體推導與完整週期追蹤表</span>
+            <span class="toggle-arrow">▼</span>
+          </div>
+          <div class="solution-content" style="display: none; padding: 1rem 1.25rem; background: #090d16; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--radius) var(--radius); line-height: 1.7; font-size: 0.9rem;">
+            ${formatMarkdown(instance.solution.explanation)}
+          </div>
+        </div>
+      `;
+
+      const btnReroll = card.querySelector(".btn-reroll");
+      const btnSubmit = card.querySelector(".btn-submit-ans");
+      const inputAns = card.querySelector(".user-ans-input");
+      const feedbackEl = card.querySelector(".ans-feedback");
+      const solToggle = card.querySelector(".solution-toggle");
+      const solContent = card.querySelector(".solution-content");
+      const toggleArrow = card.querySelector(".toggle-arrow");
+
+      btnReroll.addEventListener("click", () => {
+        instance = window.CO_SOLVER.instantiateQuestion(exDef);
+        renderCardContent();
+        window.CO_SOLVER.renderMath(card);
+      });
+
+      const doVerify = () => {
+        const val = inputAns.value.trim();
+        const res = window.CO_SOLVER.verify(exDef.id, val);
+        feedbackEl.style.display = "inline-block";
+        feedbackEl.style.marginLeft = "0.75rem";
+        if (res.isCorrect) {
+          feedbackEl.innerHTML = `<span style="color: var(--success);">驗證正確！答案確實為 ${instance.solution.correctValue}。</span>`;
+        } else {
+          feedbackEl.innerHTML = `<span style="color: var(--error);">${res.message || "未通過！請檢查計算或展開下方步驟核對。"}</span>`;
+        }
+      };
+
+      btnSubmit.addEventListener("click", doVerify);
+      inputAns.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doVerify();
+      });
+
+      solToggle.addEventListener("click", () => {
+        const isOpen = solContent.style.display === "block";
+        solContent.style.display = isOpen ? "none" : "block";
+        toggleArrow.textContent = isOpen ? "▼" : "▲";
+        if (!isOpen) {
+          window.CO_SOLVER.renderMath(solContent);
+        }
+      });
+    };
+
+    renderCardContent();
+    listContainer.appendChild(card);
+  });
+
+  window.CO_SOLVER.renderMath(container);
 }
