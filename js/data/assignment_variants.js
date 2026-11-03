@@ -399,6 +399,53 @@ window.CO_ASSIGNMENT_DATA = {
       }
     },
     {
+      id: "hw1_q3_compiler_speedup",
+      title: "HW1 第 3 題變種：編譯器優化、動態指令數與加速比綜合推算",
+      category: "編譯器最佳化與效能方程式",
+      generator: function() {
+        const pool = [
+          { icA: 1.0, timeA: 1.1, icB: 1.2, timeB: 1.5, cycleTimeNs: 1.0, icNew: 0.6, cpiNew: 1.1 },
+          { icA: 1.2, timeA: 1.4, icB: 1.5, timeB: 1.8, cycleTimeNs: 0.8, icNew: 0.7, cpiNew: 1.2 },
+          { icA: 0.8, timeA: 0.9, icB: 1.0, timeB: 1.3, cycleTimeNs: 1.0, icNew: 0.5, cpiNew: 1.0 },
+          { icA: 1.5, timeA: 1.8, icB: 1.6, timeB: 2.0, cycleTimeNs: 1.2, icNew: 0.9, cpiNew: 1.1 }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `根據作業一第 3 題題型：
+編譯器對應用程式效能具有深遠影響。假設針對同一個應用程式：
+- **Compiler A** 產生的動態指令數為 **${p.icA} $\\times 10^9$**，執行時間為 **${p.timeA} 秒**。
+- **Compiler B** 產生的動態指令數為 **${p.icB} $\\times 10^9$**，執行時間為 **${p.timeB} 秒**。
+- 原始處理器的時脈週期長度（Clock Cycle Time）為 **${p.cycleTimeNs} ns**（時脈頻率 $f = \\frac{1}{${p.cycleTimeNs} \\times 10^{-9}} \\text{ Hz}$）。
+- 現研發出一款新型編譯器 **Compiler C**，其動態指令數僅需 **${p.icNew} $\\times 10^9$**，且平均 CPI 為 **${p.cpiNew}**。
+
+**請計算：在原始處理器上，使用新型編譯器 Compiler C 相較於 Compiler A 的效能加速比（Speedup）為多少倍？**（四捨五入取至小數點後兩位）`;
+      },
+      solve: function(p) {
+        const timeC = p.icNew * p.cpiNew * p.cycleTimeNs;
+        const speedupVsA = p.timeA / timeC;
+        const rounded = parseFloat(speedupVsA.toFixed(2));
+
+        return {
+          correctValue: rounded,
+          altValue: [rounded.toFixed(2), rounded.toFixed(1)],
+          unit: "倍",
+          tolerance: 0.05,
+          explanation: `
+1. **計算 Compiler A 的平均 CPI**：
+   $$\\text{CPI}_A = \\frac{\\text{CPU Time}_A}{\\text{IC}_A \\times \\text{Cycle Time}} = \\frac{${p.timeA}\\text{ s}}{(${p.icA} \\times 10^9) \\times (${p.cycleTimeNs} \\times 10^{-9}\\text{ s})} = ${(p.timeA / (p.icA * p.cycleTimeNs)).toFixed(2)}$$
+2. **計算 Compiler B 的平均 CPI**：
+   $$\\text{CPI}_B = \\frac{\\text{CPU Time}_B}{\\text{IC}_B \\times \\text{Cycle Time}} = \\frac{${p.timeB}\\text{ s}}{(${p.icB} \\times 10^9) \\times (${p.cycleTimeNs} \\times 10^{-9}\\text{ s})} = ${(p.timeB / (p.icB * p.cycleTimeNs)).toFixed(2)}$$
+3. **計算新型 Compiler C 在原始處理器上的執行時間**：
+   $$\\text{CPU Time}_C = \\text{IC}_C \\times \\text{CPI}_C \\times \\text{Cycle Time} = (${p.icNew} \\times 10^9) \\times ${p.cpiNew} \\times (${p.cycleTimeNs} \\times 10^{-9}\\text{ s}) = \\mathbf{${timeC.toFixed(3)}\\text{ 秒}}$$
+4. **計算 Compiler C 相對 Compiler A 之加速比（Speedup）**：
+   $$\\text{Speedup}_{C \\text{ vs } A} = \\frac{\\text{CPU Time}_A}{\\text{CPU Time}_C} = \\frac{${p.timeA}\\text{ s}}{${timeC.toFixed(3)}\\text{ s}} \\approx \\mathbf{${rounded}\\text{ 倍}}$$
+   *(若題目詢問相較於 Compiler B，則為 $\\frac{${p.timeB}}{${timeC.toFixed(3)}} \\approx ${(p.timeB / timeC).toFixed(2)}\\text{ 倍}$)*
+          `
+        };
+      }
+    },
+    {
       id: "hw1_q4_amdahl_limit",
       title: "HW1 第 4 題變種：阿姆達爾定律（Amdahl's Law）單一部件極限判定",
       category: "Amdahl 定律與系統極限",
@@ -437,6 +484,123 @@ window.CO_ASSIGNMENT_DATA = {
    - 該程式在 ${p.unitName} 上所花費的總時間僅有 **${p.br} 秒**。
    - 即使將該單元加速至無限大（執行時間縮減為 0 秒），最多也只能為整體程式節省 **${p.br} 秒**。
    - 由於 ${p.br} 秒 ${p.br >= reqCut ? "\\ge" : "<"} ${reqCut.toFixed(1)} 秒，因此**${feasible ? "可行" : "物理上完全不可能達成（Unattainable）"}**！
+          `
+        };
+      }
+    },
+    {
+      id: "hw1_q6_instruction_encoding",
+      title: "HW1 第 6 題變種：MIPS 指令格式欄位二進位解析與十六進位機器碼轉換",
+      category: "MIPS 指令編碼與機器碼",
+      generator: function() {
+        const pool = [
+          {
+            type: "I",
+            name: "lw",
+            asm: "lw $t0, 4($s0)",
+            op: 0x23, opBin: "100011",
+            rs: 16, rsName: "$s0", rsBin: "10000",
+            rt: 8, rtName: "$t0", rtBin: "01000",
+            imm: 4, immBin: "0000000000000100",
+            hex: "8E080004"
+          },
+          {
+            type: "I",
+            name: "sw",
+            asm: "sw $ra, 8($sp)",
+            op: 0x2B, opBin: "101011",
+            rs: 29, rsName: "$sp", rsBin: "11101",
+            rt: 31, rtName: "$ra", rtBin: "11111",
+            imm: 8, immBin: "0000000000001000",
+            hex: "AFBF0008"
+          },
+          {
+            type: "I",
+            name: "addi",
+            asm: "addi $t1, $s1, -12",
+            op: 0x08, opBin: "001000",
+            rs: 17, rsName: "$s1", rsBin: "10001",
+            rt: 9, rtName: "$t1", rtBin: "01001",
+            imm: -12, immBin: "1111111111110100",
+            hex: "2229FFF4"
+          },
+          {
+            type: "I",
+            name: "bne",
+            asm: "bne $s0, $s1, 16",
+            op: 0x05, opBin: "000101",
+            rs: 16, rsName: "$s0", rsBin: "10000",
+            rt: 17, rtName: "$s1", rtBin: "10001",
+            imm: 16, immBin: "0000000000010000",
+            hex: "16110010"
+          },
+          {
+            type: "R",
+            name: "add",
+            asm: "add $s2, $t0, $t1",
+            op: 0, opBin: "000000",
+            rs: 8, rsName: "$t0", rsBin: "01000",
+            rt: 9, rtName: "$t1", rtBin: "01001",
+            rd: 18, rdName: "$s2", rdBin: "10010",
+            shamt: 0, shamtBin: "00000",
+            funct: 32, functBin: "100000",
+            hex: "01099020"
+          },
+          {
+            type: "R",
+            name: "sub",
+            asm: "sub $t3, $s1, $s2",
+            op: 0, opBin: "000000",
+            rs: 17, rsName: "$s1", rsBin: "10001",
+            rt: 18, rtName: "$s2", rtBin: "10010",
+            rd: 11, rdName: "$t3", rdBin: "01011",
+            shamt: 0, shamtBin: "00000",
+            funct: 34, functBin: "100010",
+            hex: "02325822"
+          }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
+      },
+      render: function(p) {
+        return `根據作業一第 6 題題型：
+給定 MIPS 組合語言指令：\`${p.asm}\`。
+請將其翻譯為 32 位元機器碼，並解析其格式欄位。
+
+**請計算：此指令對應的 32 位元十六進位機器碼（Hexadecimal representation）為何？**（格式如 \`0x${p.hex}\` 或 \`0x${p.hex.toLowerCase()}\`）`;
+      },
+      solve: function(p) {
+        const hex = p.hex;
+        let breakdown = "";
+        if (p.type === "R") {
+          breakdown = `
+| 欄位 | opcode (6 bits) | rs (5 bits) | rt (5 bits) | rd (5 bits) | shamt (5 bits) | funct (6 bits) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **十進位** | 0 | \${p.rs} (\${p.rsName}) | \${p.rt} (\${p.rtName}) | \${p.rd} (\${p.rdName}) | \${p.shamt} | \${p.funct} |
+| **二進位** | \`\${p.opBin}\` | \`\${p.rsBin}\` | \`\${p.rtBin}\` | \`\${p.rdBin}\` | \`\${p.shamtBin}\` | \`\${p.functBin}\` |
+          `;
+        } else {
+          breakdown = `
+| 欄位 | opcode (6 bits) | rs (5 bits) | rt (5 bits) | immediate (16 bits) |
+| :--- | :--- | :--- | :--- | :--- |
+| **十進位 / 暫存器** | 0x\${p.op.toString(16).toUpperCase()} | \${p.rs} (\${p.rsName}) | \${p.rt} (\${p.rtName}) | \${p.imm} |
+| **二進位** | \`\${p.opBin}\` | \`\${p.rsBin}\` | \`\${p.rtBin}\` | \`\${p.immBin}\` |
+          `;
+        }
+
+        return {
+          correctValue: `0x${hex}`,
+          altValue: [hex, `0x${hex.toLowerCase()}`, hex.toLowerCase()],
+          unit: "",
+          tolerance: 0,
+          explanation: `
+1. **指令類別與格式識別**：
+   指令 \\\`\${p.asm}\\\` 屬於 **\${p.type}-type** 指令。
+2. **各欄位數值拆解**：
+\${breakdown}
+3. **組裝 32 位元二進位字串**：
+   \\\`\${p.type === 'R' ? \`\${p.opBin} \${p.rsBin} \${p.rtBin} \${p.rdBin} \${p.shamtBin} \${p.functBin}\` : \`\${p.opBin} \${p.rsBin} \${p.rtBin} \${p.immBin.slice(0, 4)} \${p.immBin.slice(4, 8)} \${p.immBin.slice(8, 12)} \${p.immBin.slice(12, 16)}\`}\\\`
+4. **每 4 位元轉換為十六進位**：
+   $\\implies$ **0x\${hex}**
           `
         };
       }
