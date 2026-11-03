@@ -33,7 +33,8 @@
     
     <!-- 標籤導航欄 -->
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="tabCheatSheet">重點精華與公式速查</button>
+      <button class="tab-btn active" data-tab="tabCramNotes" style="color: #fbbf24; font-weight: bold;">⚡ 考前 60 分鐘超精華速背秘笈</button>
+      <button class="tab-btn" data-tab="tabCheatSheet">重點精華與公式速查</button>
       <button class="tab-btn" data-tab="tabCalcArena">動態計算題庫（隨機出題與驗證）</button>
       <button class="tab-btn" data-tab="tabTranslation">C / MIPS 雙向轉譯特訓中心（18 大題型）</button>
       <button class="tab-btn" data-tab="tabInteractiveLab">互動邏輯實驗室（布斯、浮點數與堆疊）</button>
@@ -42,8 +43,13 @@
       <button class="tab-btn" data-tab="tabMockExam">全真模擬隨機測驗</button>
     </nav>
 
+    <!-- 標籤頁 0：考前 60 分鐘超精華速背秘笈 -->
+    <section id="tabCramNotes" class="tab-content active">
+      <div id="cramNotesContainer"></div>
+    </section>
+
     <!-- 標籤頁 1：重點精華與公式手冊 -->
-    <section id="tabCheatSheet" class="tab-content active">
+    <section id="tabCheatSheet" class="tab-content">
       <div id="cheatSheetContainer"></div>
     </section>
 
@@ -116,6 +122,7 @@
   <script src="js/data/teacher_exercises.js"></script>
   <script src="js/data/assignment_variants.js"></script>
   <script src="js/engine/interactive_lab.js"></script>
+  <script src="js/cram_notes.js"></script>
   <script src="js/app.js"></script>
 
 </body>

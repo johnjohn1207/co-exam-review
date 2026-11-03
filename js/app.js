@@ -5,6 +5,7 @@ let currentTransMode = "study"; // "study" (對照研讀) 或 "quiz" (盲測默�
 document.addEventListener("DOMContentLoaded", function() {
   initTheme();
   initTabs();
+  if (typeof renderCramNotes === "function") renderCramNotes();
   renderCheatSheet();
   renderCalculationArena();
   renderTranslationLab();
