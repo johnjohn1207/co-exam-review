@@ -263,7 +263,136 @@ ${tableRows.join("\n")}
   },
 
   // ==========================================
-  // 4. 習題 3.29 動態變種：16 位元半精度浮點加法與 GRS 判定
+  // 4. 習題 3.27 動態變種：16 位元半精度格式轉換與自訂偏壓 Excess-16 / Excess-15
+  // ==========================================
+  {
+    id: "ex_3_27_half_prec_rep",
+    originalNo: "課後習題 3.27",
+    title: "習題 3.27 變種：16 位元半精度（Half Precision）位元模式編碼與單精度對比",
+    category: "浮點數格式與編碼",
+    generator: function() {
+      const pool = [
+        {
+          decVal: -0.15625,
+          formula: "-1.5625 \\times 10^{-1}",
+          sign: 1,
+          realExp: -3,
+          biasMode: "Excess-16",
+          bias: 16,
+          normBin: "-1.01_2 \\times 2^{-3}",
+          frac10: "0100000000",
+          expBin: "01101",
+          fullBin: "1011 0101 0000 0000",
+          hex: "B500",
+          altHex15: "B100"
+        },
+        {
+          decVal: 0.375,
+          formula: "+3.75 \\times 10^{-1}",
+          sign: 0,
+          realExp: -2,
+          biasMode: "Excess-16",
+          bias: 16,
+          normBin: "+1.1_2 \\times 2^{-2}",
+          frac10: "1000000000",
+          expBin: "01110",
+          fullBin: "0011 1010 0000 0000",
+          hex: "3A00",
+          altHex15: "3600"
+        },
+        {
+          decVal: -0.0625,
+          formula: "-6.25 \\times 10^{-2}",
+          sign: 1,
+          realExp: -4,
+          biasMode: "Excess-16",
+          bias: 16,
+          normBin: "-1.0_2 \\times 2^{-4}",
+          frac10: "0000000000",
+          expBin: "01100",
+          fullBin: "1011 0000 0000 0000",
+          hex: "B000",
+          altHex15: "AC00"
+        },
+        {
+          decVal: 1.625,
+          formula: "+1.625 \\times 10^{0}",
+          sign: 0,
+          realExp: 0,
+          biasMode: "Excess-16",
+          bias: 16,
+          normBin: "+1.101_2 \\times 2^{0}",
+          frac10: "1010000000",
+          expBin: "10000",
+          fullBin: "0100 0010 1000 0000",
+          hex: "4280",
+          altHex15: "3E80"
+        },
+        {
+          decVal: -0.4375,
+          formula: "-4.375 \\times 10^{-1}",
+          sign: 1,
+          realExp: -2,
+          biasMode: "Excess-16",
+          bias: 16,
+          normBin: "-1.11_2 \\times 2^{-2}",
+          frac10: "1100000000",
+          expBin: "01110",
+          fullBin: "1011 1011 0000 0000",
+          hex: "BB00",
+          altHex15: "B700"
+        }
+      ];
+      return pool[Math.floor(Math.random() * pool.length)];
+    },
+    render: function(p) {
+      return `依據 **課後習題 3.27**（IEEE 754-2008 Half Precision 16 位元浮點數規格）：
+- 總長度：16 bits
+- 最左側符號位元：1 bit
+- 指數欄位：5 bits，題目特別指定使用 **${p.biasMode}（Bias = ${p.bias}）** 儲存
+- 假數（有效數）欄位：10 bits（假設隱含前導 1）
+
+請將實數 **$${p.formula}$**（十進位 $${p.decVal}$）轉換為此 16 位元半精度格式。
+
+**請計算：此數值在此規格下的 16 位元十六進位機器碼為何？**（格式如 \`0x${p.hex}\` 或 \`${p.hex}\`，同時請思考其數值範圍 Range 與精確度 Accuracy 相較於 32 位元單精度之差異）`;
+    },
+    solve: function(p) {
+      const storedExp = p.realExp + p.bias;
+      return {
+        correctValue: `0x${p.hex}`,
+        altValue: [p.hex, `0x${p.hex.toLowerCase()}`, p.hex.toLowerCase(), p.fullBin.replace(/\s+/g, "")],
+        unit: "",
+        tolerance: 0,
+        explanation: `
+1. **十進位轉二進位規格化科學記號**：
+   - 數值 $${p.decVal}$ 為${p.sign === 1 ? "負數" : "正數"} $\\implies$ 符號位元 **$S = ${p.sign}$**。
+   - 絕對值 $|${p.decVal}| = ${Math.abs(p.decVal)}$。
+   - 二進位表示：$${p.normBin}$。
+   - 真實指數（Unbiased Exponent）：**$${p.realExp}$**。
+   - 假數部分（去除前導 1 後補足 10 位元）：**\`${p.frac10}\`**。
+2. **指數欄位編碼（題目指定 ${p.biasMode}，Bias = ${p.bias}）**：
+   - 偏差指數 $E = \\text{真實指數} + \\text{Bias} = ${p.realExp} + ${p.bias} = ${storedExp} = \\mathbf{${p.expBin}_2}$。
+3. **16 位元位元模式組裝**：
+   - 符號位元（1 bit）：\`${p.sign}\`
+   - 指數欄位（5 bits）：\`${p.expBin}\`
+   - 假數欄位（10 bits）：\`${p.frac10}\`
+   - 組合結果：\`${p.sign} ${p.expBin} ${p.frac10}\` $\\implies$ 二進位 \`${p.fullBin}\` $\\implies$ **0x${p.hex}**。
+   *(註：若依據標準 IEEE 754-2008 Excess-15 規範，指數為 $${p.realExp}+15=${p.realExp+15}$，十六進位為 0x${p.altHex15})*。
+4. **與 32 位元單精度（Single Precision）之範圍與精準度深度對比**：
+   - **數值範圍（Range）**：
+     - 16 位元半精度：指數 5 bits（$E = 1 \\sim 30$），真實指數範圍 $-14 \\sim +15$（Excess-15）或 $-15 \\sim +14$（Excess-16），十進位動態範圍約為 $10^{\\pm 4.5}$。
+     - 32 位元單精度：指數 8 bits（$E = 1 \\sim 254$），真實指數範圍 $-126 \\sim +127$，十進位動態範圍約為 $10^{\\pm 38}$。
+     - **結論**：32 位元單精度的動態範圍遠大於 16 位元半精度。
+   - **精準度（Accuracy / Precision）**：
+     - 16 位元半精度：假數 10 bits（含隱含 1 共 11 bits 有效數），十進位精準度 $\\approx \\log_{10}(2^{11}) \\approx 3.31$ 位十進位有效數字（約 3 到 4 位有效數字）。
+     - 32 位元單精度：假數 23 bits（含隱含 1 共 24 bits 有效數），十進位精準度 $\\approx \\log_{10}(2^{24}) \\approx 7.22$ 位十進位有效數字（約 7 到 8 位有效數字）。
+        `
+      };
+    }
+  },
+
+  // ==========================================
+  // 5. 習題 3.29 動態變種：16 位元半精度浮點加法與 GRS 判定
   // ==========================================
   {
     id: "ex_3_29_half_prec_add",
@@ -316,6 +445,36 @@ ${tableRows.join("\n")}
           finalFrac: "0010010110",
           finalHex: "4C96",
           finalDec: 18.34375
+        },
+        {
+          aDec: 8.75,
+          aBin: "+1.0001100000_2 \\times 2^3",
+          aExp: 18,
+          bDec: 0.28125,
+          bBin: "+1.0010000000_2 \\times 2^{-2}",
+          bExp: 13,
+          diffExp: 5,
+          shiftedB: "0.0000100100",
+          grs: "0 0 0",
+          roundAction: "捨去 (Round Down)",
+          finalFrac: "0010000100",
+          finalHex: "4884",
+          finalDec: 9.03125
+        },
+        {
+          aDec: 15.5,
+          aBin: "+1.1111000000_2 \\times 2^3",
+          aExp: 18,
+          bDec: 0.34375,
+          bBin: "+1.0110000000_2 \\times 2^{-2}",
+          bExp: 13,
+          diffExp: 5,
+          shiftedB: "0.0000101100",
+          grs: "0 0 0",
+          roundAction: "捨去 (Round Down)",
+          finalFrac: "1111101100",
+          finalHex: "4BEE",
+          finalDec: 15.84375
         }
       ];
       return pool[Math.floor(Math.random() * pool.length)];
@@ -355,7 +514,7 @@ ${tableRows.join("\n")}
   },
 
   // ==========================================
-  // 5. 習題 3.35 動態變種：浮點數乘法指數下溢判定
+  // 6. 習題 3.35 動態變種：浮點數乘法指數下溢判定
   // ==========================================
   {
     id: "ex_3_35_float_underflow",
@@ -372,9 +531,36 @@ ${tableRows.join("\n")}
           firstExpSum: -17,
           isUnderflow: true,
           finalResult: 0
+        },
+        {
+          aDec: "1.5 × 2^-10", aBin: "1.5 × 2^-10", ea: -10,
+          bDec: "1.25 × 2^-7", bBin: "1.25 × 2^-7", eb: -7,
+          cDec: "1.75 × 2^5", cBin: "1.75 × 2^5", ec: 5,
+          minExp: -14,
+          firstExpSum: -17,
+          isUnderflow: true,
+          finalResult: 0
+        },
+        {
+          aDec: "1.125 × 2^-8", aBin: "1.125 × 2^-8", ea: -8,
+          bDec: "1.5 × 2^-8", bBin: "1.5 × 2^-8", eb: -8,
+          cDec: "1.25 × 2^7", cBin: "1.25 × 2^7", ec: 7,
+          minExp: -14,
+          firstExpSum: -16,
+          isUnderflow: true,
+          finalResult: 0
+        },
+        {
+          aDec: "1.875 × 2^-9", aBin: "1.875 × 2^-9", ea: -9,
+          bDec: "1.375 × 2^-7", bBin: "1.375 × 2^-7", eb: -7,
+          cDec: "1.125 × 2^6", cBin: "1.125 × 2^6", ec: 6,
+          minExp: -14,
+          firstExpSum: -16,
+          isUnderflow: true,
+          finalResult: 0
         }
       ];
-      return pool[0];
+      return pool[Math.floor(Math.random() * pool.length)];
     },
     render: function(p) {
       return `依據 **課後習題 3.35**：
@@ -406,7 +592,7 @@ ${tableRows.join("\n")}
   },
 
   // ==========================================
-  // 6. 習題 3.36 動態變種：浮點數乘法精度保留推導
+  // 7. 習題 3.36 動態變種：浮點數乘法精度保留推導
   // ==========================================
   {
     id: "ex_3_36_float_precision",
@@ -424,16 +610,36 @@ ${tableRows.join("\n")}
           finalExp: -9,
           finalHex: "18B1",
           finalDecApprox: "0.0022907"
+        },
+        {
+          aDec: "1.5 × 2^-10", ea: -10,
+          bDec: "1.25 × 2^-7", eb: -7,
+          cDec: "1.75 × 2^5", ec: 5,
+          step1Exp: -2,
+          step1NormExp: -1,
+          finalExp: -10,
+          finalHex: "1530",
+          finalDecApprox: "0.00320"
+        },
+        {
+          aDec: "1.125 × 2^-8", ea: -8,
+          bDec: "1.5 × 2^-8", eb: -8,
+          cDec: "1.25 × 2^7", ec: 7,
+          step1Exp: -1,
+          step1NormExp: 0,
+          finalExp: -8,
+          finalHex: "1E10",
+          finalDecApprox: "0.0082"
         }
       ];
-      return pool[0];
+      return pool[Math.floor(Math.random() * pool.length)];
     },
     render: function(p) {
       return `依據 **課後習題 3.36**：
-調整運算結合順序，計算 $A \\times (B \\times C)$（參數同前題）：
-- $A = 1.75 \\times 2^{-9}$
-- $B = 1.625 \\times 2^{-8}$
-- $C = 1.650390625 \\times 2^6$
+調整運算結合順序，計算 $A \\times (B \\times C)$：
+- $A = ${p.aDec}$
+- $B = ${p.bDec}$
+- $C = ${p.cDec}$
 
 **請推算：在此運算順序下，運算全程是否發生指數下溢？最終 16 位元半精度結果的十六進位表示碼為何？**（格式如 \`0x${p.finalHex}\` 或 \`${p.finalHex}\`）`;
     },
@@ -445,23 +651,21 @@ ${tableRows.join("\n")}
         tolerance: 0,
         explanation: `
 1. **第一階段：計算 $(B \\times C)$**：
-   - 指數相加：$(-8) + 6 = -2$。
-   - 假數相乘：$1.625 \\times 1.650390625 = 2.681884765625 = 10.101011101001_2$。
-   - 規格化右移 1 位元，指數調整為 $-2 + 1 = -1$（偏置指數 $E = -1 + 15 = 14$）。
-   - 向最近偶數捨入後假數為 \`1.0101011101\`，指數在合法範圍內，**未發生下溢**！
+   - 指數相加：$(${p.eb}) + ${p.ec} = ${p.step1Exp}$。
+   - 規格化後指數調整為 $${p.step1NormExp}$（偏置指數 $E = ${p.step1NormExp} + 15 = ${p.step1NormExp + 15}$）。
+   - 向最近偶數捨入，指數在合法範圍內，**未發生下溢**！
 2. **第二階段：計算 $A \\times (B \\times C)$**：
-   - 指數相加：$(-9) + (-1) = -10$。
-   - 假數相乘並規格化右移 1 位元，最終指數調整為 $-10 + 1 = -9$（偏置指數 $E = -9 + 15 = 6 = 00110_2$）。
-   - 捨入後假數為 \`0010110001\`。
+   - 指數相加：$(${p.ea}) + (${p.step1NormExp}) = ${p.finalExp}$。
+   - 偏置指數 $E = ${p.finalExp} + 15 = ${p.finalExp + 15}$。
 3. **最終機器碼組裝**：
-   \`0 00110 0010110001\` $\\implies$ **0x${p.finalHex}**（十進位約為 **${p.finalDecApprox}**）。
+   $\\implies$ **0x${p.finalHex}**（十進位約為 **${p.finalDecApprox}**）。
         `
       };
     }
   },
 
   // ==========================================
-  // 7. 習題 3.37 動態變種：浮點數結合律失效分析
+  // 8. 習題 3.37 動態變種：浮點數結合律失效分析
   // ==========================================
   {
     id: "ex_3_37_associative_law",
@@ -469,15 +673,28 @@ ${tableRows.join("\n")}
     title: "習題 3.37 變種：電腦系統中浮點數結合律失效綜合判定與硬體根因剖析",
     category: "浮點數運算特性",
     generator: function() {
-      return {
-        equation: "(A × B) × C = A × (B × C)",
-        holds: "否",
-        aliases: ["否", "不成立", "false", "no", "0", "不相等"]
-      };
+      const pool = [
+        {
+          expr: "(A × B) × C = A × (B × C)",
+          context: "課後習題 3.35 與 3.36 數值情境（乘法下溢對比）",
+          aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+        },
+        {
+          expr: "(A + B) + C = A + (B + C)",
+          context: "大數與極小數相加引發有效位數移出（Catastrophic Cancellation / Align Precision Loss）情境",
+          aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+        },
+        {
+          expr: "(X × Y) × Z = X × (Y × Z)",
+          context: "微處理器編譯器指令重新排序（Instruction Reordering）安全性判定",
+          aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+        }
+      ];
+      return pool[Math.floor(Math.random() * pool.length)];
     },
     render: function(p) {
-      return `綜合課後習題 3.35 與 3.36 之手算結果：
-在有限精確度的計算機浮點數運算硬體中，等式 **$(A \\times B) \\times C = A \\times (B \\times C)$** 是否恆成立？（請回答：\`是\` 或 \`否\`）`;
+      return `綜合課後習題 3.35、3.36 與 3.37 之深入探討（${p.context}）：
+在有限精確度的計算機浮點數運算硬體中，結合律等式 **$${p.expr}$** 是否恆成立？（請回答：\`是\` 或 \`否\`）`;
     },
     solve: function(p) {
       return {
@@ -486,12 +703,12 @@ ${tableRows.join("\n")}
         unit: "",
         tolerance: 0,
         explanation: `
-1. **核心定論**：電腦中的浮點數運算**不滿足結合律（Floating-point arithmetic is NOT associative）**！
+1. **核心定論**：電腦中的浮點數運算**不滿足結合律（Floating-point arithmetic is NOT associative）**！無論是浮點加法或浮點乘法皆然！
 2. **根因剖析**：
-   - **順序一 $(A \\times B) \\times C$**：先將兩個極小數相乘，導致中間指數跌破最小規格化指數門檻（Underflow），數值被硬體歸零，導致最終結果為 0。
-   - **順序二 $A \\times (B \\times C)$**：先將小數與大數相乘，指數得以維持在規格化可表示範圍內，有效避免下溢，成功保留高精確度有效數。
+   - **乘法情況**：先將兩個極小數相乘，導致中間指數跌破最小規格化指數門檻（Underflow），數值被硬體歸零，導致最終結果為 0；但先乘大數則能維持在合法指數範圍內，保留有效數字。
+   - **加法情況**：極大數與極小數相加時，小數指數向大數靠攏，導致小數的低位元被右移出假數暫存器而遺失（Precision loss）。
 3. **對軟體編譯器之重要意涵**：
-   編譯器在最佳化程式碼時，**不能任意重排浮點數運算的結合順序**，否則可能導致程式產生嚴重誤差或非預期之數值歸零！
+   編譯器在最佳化程式碼時，**絕對不能任意重排浮點數運算的結合順序**，否則可能導致程式產生嚴重誤差或非預期之數值歸零！
         `
       };
     }

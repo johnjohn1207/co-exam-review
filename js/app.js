@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", function() {
   renderTeacherCuratedArena();
   renderAssignmentsLab();
   initMockExam();
-  renderExpansionGuide();
   initBackToTop();
 });
 
@@ -229,33 +228,39 @@ function refreshCardContent(card, problemDef) {
   const solutionContent = card.querySelector(".solution-content");
   const toggleIcon = card.querySelector(".toggle-icon");
 
-  verifyBtn.addEventListener("click", function() {
-    const res = window.CO_SOLVER.verify(problemDef.id, inputEl.value);
-    feedbackEl.className = `feedback-msg show ${res.isCorrect ? "feedback-success" : "feedback-error"}`;
-    feedbackEl.innerHTML = `<strong>${res.isCorrect ? "驗證正確" : "未通過"}</strong>：${res.message}`;
-    if (!res.isCorrect) {
-      solutionContent.classList.add("open");
-      toggleIcon.textContent = "▲";
-    }
-    window.CO_SOLVER.renderMath(feedbackEl);
-  });
+  if (verifyBtn && inputEl && feedbackEl && solutionContent) {
+    verifyBtn.addEventListener("click", function() {
+      const res = window.CO_SOLVER.verify(problemDef.id, inputEl.value);
+      feedbackEl.className = `feedback-msg show ${res.isCorrect ? "feedback-success" : "feedback-error"}`;
+      feedbackEl.innerHTML = `<strong>${res.isCorrect ? "驗證正確" : "未通過"}</strong>：${res.message}`;
+      if (!res.isCorrect) {
+        solutionContent.classList.add("open");
+        if (toggleIcon) toggleIcon.textContent = "▲";
+      }
+      window.CO_SOLVER.renderMath(feedbackEl);
+    });
 
-  inputEl.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      verifyBtn.click();
-    }
-  });
+    inputEl.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        verifyBtn.click();
+      }
+    });
+  }
 
-  refreshBtn.addEventListener("click", function() {
-    refreshCardContent(card, problemDef);
-    window.CO_SOLVER.renderMath(card);
-  });
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", function() {
+      refreshCardContent(card, problemDef);
+      window.CO_SOLVER.renderMath(card);
+    });
+  }
 
-  solutionToggle.addEventListener("click", function() {
-    solutionContent.classList.toggle("open");
-    toggleIcon.textContent = solutionContent.classList.contains("open") ? "▲" : "▼";
-    window.CO_SOLVER.renderMath(solutionContent);
-  });
+  if (solutionToggle && solutionContent) {
+    solutionToggle.addEventListener("click", function() {
+      solutionContent.classList.toggle("open");
+      if (toggleIcon) toggleIcon.textContent = solutionContent.classList.contains("open") ? "▲" : "▼";
+      window.CO_SOLVER.renderMath(solutionContent);
+    });
+  }
 }
 
 // 5. 渲染 C/C++ 與 MIPS 雙向轉譯特訓中心 (Translation Lab)
@@ -482,20 +487,692 @@ function applyTransMode() {
   });
 }
 
-// 6. 渲染作業全真解析專區 (Assignment 1 & 2 Lab)
+// 6. 渲染作業一與作業二全真變種與默寫實戰特訓中心
 function renderAssignmentsLab() {
   const container = document.getElementById("assignmentsLabContainer");
   if (!container) return;
 
   container.innerHTML = `
-    <!-- Assignment 1 必考解析 -->
+    <!-- 頂部導引卡片與子分頁切換 -->
+    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+      <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <h2 class="card-title" style="color: var(--primary);">作業一與作業二全真變種與默寫實戰特訓中心</h2>
+          <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+            專門針對期中考高頻命題：<strong>MIPS 雙遞迴（Fibonacci）、階乘（Factorial）指令逐行解構、手寫挖空填空、全程式白板默寫</strong> 與 <strong>HW1 動態變種計算題</strong>。
+          </div>
+        </div>
+        <span class="tag-badge tag-hw2">期中考必抓分專區</span>
+      </div>
+
+      <!-- 子標籤切換導航按鈕 -->
+      <div class="mode-switch-bar" style="margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <button class="mode-btn active" id="btnHwSub1">1. 指令功能逐行解構抽測（哪個指令是幹嘛的）</button>
+        <button class="mode-btn" id="btnHwSub2">2. 手寫默寫特訓（挖空填空與全程式白板）</button>
+        <button class="mode-btn" id="btnHwSub3">3. 作業一 7 大動態變種刷題</button>
+        <button class="mode-btn" id="btnHwSub4">4. 期中筆試 5 大致命陷阱與 MARS 實戰</button>
+      </div>
+    </div>
+
+    <!-- 子容器 1：指令功能解構與即時抽測 -->
+    <div id="hwSubView1" class="hw-sub-view"></div>
+
+    <!-- 子容器 2：手寫默寫特訓（挖空與白板） -->
+    <div id="hwSubView2" class="hw-sub-view" style="display: none;"></div>
+
+    <!-- 子容器 3：作業一動態變種 -->
+    <div id="hwSubView3" class="hw-sub-view" style="display: none;"></div>
+
+    <!-- 子容器 4：致命陷阱與 MARS 實戰 -->
+    <div id="hwSubView4" class="hw-sub-view" style="display: none;"></div>
+  `;
+
+  // 子分頁切換邏輯
+  const tabs = [
+    { btn: "btnHwSub1", view: "hwSubView1" },
+    { btn: "btnHwSub2", view: "hwSubView2" },
+    { btn: "btnHwSub3", view: "hwSubView3" },
+    { btn: "btnHwSub4", view: "hwSubView4" }
+  ];
+
+  tabs.forEach(t => {
+    const b = document.getElementById(t.btn);
+    if (!b) return;
+    b.addEventListener("click", () => {
+      tabs.forEach(x => {
+        const btnEl = document.getElementById(x.btn);
+        const viewEl = document.getElementById(x.view);
+        if (btnEl) btnEl.classList.remove("active");
+        if (viewEl) viewEl.style.display = "none";
+      });
+      b.classList.add("active");
+      const targetView = document.getElementById(t.view);
+      if (targetView) targetView.style.display = "block";
+    });
+  });
+
+  // 掛載各子視圖
+  renderHwSubView1();
+  renderHwSubView2();
+  renderHwSubView3();
+  renderHwSubView4();
+}
+
+// ---------------------------------------------------------------------------
+// 子視圖 1：指令功能逐行解構與即時抽測（哪個指令是幹嘛的）
+// ---------------------------------------------------------------------------
+function renderHwSubView1() {
+  const container = document.getElementById("hwSubView1");
+  if (!container || !window.CO_ASSIGNMENT_DATA) return;
+
+  let currentSub = "fib"; // "fib" or "fact"
+  let currentQuizIdx = 0;
+
+  const getSubCode = (sub) => {
+    if (sub === "fib") {
+      return [
+        { line: "fib: addi $sp, $sp, -12", tag: "Prologue 堆疊配置", desc: "在堆疊頂部配置 12 位元組（3 個 Word）空間，為 Non-leaf procedure 準備訊框。" },
+        { line: "      sw   $ra, 8($sp)", tag: "返回位址保存", desc: "【致命必考】將呼叫端的返回位址存入堆疊。因內部會執行 jal fib 覆蓋 $ra，未備份將陷入死迴圈！" },
+        { line: "      sw   $s0, 4($sp)", tag: "Callee-saved 保存", desc: "【約定責任】$s0 由被呼叫端負責保護。進入時備份舊值，离开時還原，防止外層呼叫端的變數被竄改。" },
+        { line: "      sw   $a0, 0($sp)", tag: "Caller-saved 引數保護", desc: "【參數保護】將當前層的引數 n 保存於堆疊，供後續計算 fib(n-2) 時還原使用。" },
+        { line: "      beq  $a0, $zero, fib_base0", tag: "Base Case 判斷 (n=0)", desc: "檢查是否命中 n == 0。若成立跳轉至回傳 0。" },
+        { line: "      li   $t0, 1", tag: "常數設定", desc: "載入常數 1 用以比對。" },
+        { line: "      beq  $a0, $t0, fib_base1", tag: "Base Case 判斷 (n=1)", desc: "檢查是否命中 n == 1。若成立跳轉至回傳 1。" },
+        { line: "      addi $a0, $a0, -1", tag: "遞迴引數遞減", desc: "準備第一次遞迴引數：$a0 = n - 1。" },
+        { line: "      jal  fib", tag: "第一次遞迴呼叫", desc: "執行 fib(n - 1)，結果放置於回傳值暫存器 $v0。" },
+        { line: "      move $s0, $v0", tag: "中間結果移轉暫存", desc: "【致命必考】第二次呼叫 jal fib 會覆寫 $v0，必須將第一次結果移入已在開頭受保護的 $s0 安全保存！" },
+        { line: "      lw   $a0, 0($sp)", tag: "原始引數重載", desc: "【致命必考】剛從子呼叫返回時 $a0 已被子層污染，必須自堆疊重新載回原始 n，方能計算 n - 2！" },
+        { line: "      addi $a0, $a0, -2", tag: "第二次引數計算", desc: "設定第二次遞迴引數：$a0 = n - 2。" },
+        { line: "      jal  fib", tag: "第二次遞迴呼叫", desc: "執行 fib(n - 2)，回傳值於 $v0。" },
+        { line: "      add  $v0, $s0, $v0", tag: "結果合併加總", desc: "執行 F(n) = F(n-1) + F(n-2)，即 $v0 = $s0 + $v0。" },
+        { line: "      j    fib_return", tag: "跳轉至結尾還原", desc: "跳轉至函式結尾統一執行暫存器還原與釋放堆疊。" },
+        { line: "fib_base0: li $v0, 0", tag: "Base Case 0 回傳", desc: "n == 0 時回傳 0。" },
+        { line: "fib_base1: li $v0, 1", tag: "Base Case 1 回傳", desc: "n == 1 時回傳 1。" },
+        { line: "fib_return: lw $a0, 0($sp)", tag: "Epilogue 還原引數", desc: "自堆疊還原暫存器舊值。" },
+        { line: "            lw $s0, 4($sp)", tag: "Epilogue 還原 $s0", desc: "還原 Callee-saved 暫存器 $s0 舊值。" },
+        { line: "            lw $ra, 8($sp)", tag: "Epilogue 還原 $ra", desc: "還原呼叫端的返回位址。" },
+        { line: "            addi $sp, $sp, 12", tag: "Epilogue 釋放堆疊", desc: "【平衡必考】釋放開頭配置的 12 位元組堆疊框架，維持堆疊指標平衡。" },
+        { line: "            jr   $ra", tag: "返回呼叫端", desc: "跳回呼叫端（如 main 函式或上一層遞迴）。" }
+      ];
+    } else {
+      return [
+        { line: "fact: addi $sp, $sp, -8", tag: "Prologue 堆疊配置", desc: "單一遞迴僅需保存 $ra 與 $a0，配置 8 位元組堆疊框架。" },
+        { line: "      sw   $ra, 4($sp)", tag: "返回位址保存", desc: "保存返回位址，避免內部 jal fact 覆寫。" },
+        { line: "      sw   $a0, 0($sp)", tag: "傳入引數保存", desc: "保存原始引數 n，供遞迴返回後執行 n * fact(n-1) 使用。" },
+        { line: "      slti $t0, $a0, 1", tag: "Base Case 測試 (n < 1)", desc: "測試 n 是否小於 1。" },
+        { line: "      beq  $t0, $zero, L1", tag: "條件跳躍", desc: "若 n >= 1 則跳往遞迴標籤 L1。" },
+        { line: "      li   $v0, 1", tag: "Base Case 回傳 1", desc: "當 n < 1 時，0! = 1，回傳 1。" },
+        { line: "      addi $sp, $sp, 8", tag: "Base Case 釋放堆疊", desc: "【平衡必考】在返回前必須釋放堆疊，防止 Stack Leak。" },
+        { line: "      jr   $ra", tag: "Base Case 返回", desc: "返回呼叫端。" },
+        { line: "L1:   addi $a0, $a0, -1", tag: "引數遞減", desc: "引數調整為 n - 1。" },
+        { line: "      jal  fact", tag: "遞迴呼叫", desc: "呼叫 fact(n - 1)，傳回值於 $v0。" },
+        { line: "      lw   $a0, 0($sp)", tag: "原始引數重載", desc: "自堆疊還原本層進入時的原始引數 n。" },
+        { line: "      lw   $ra, 4($sp)", tag: "返回位址還原", desc: "還原返回位址。" },
+        { line: "      addi $sp, $sp, 8", tag: "Epilogue 釋放堆疊", desc: "釋放 8 位元組堆疊框架。" },
+        { line: "      mul  $v0, $a0, $v0", tag: "階乘相乘", desc: "計算 n * fact(n - 1)，存入 $v0 作為回傳值。" },
+        { line: "      jr   $ra", tag: "返回呼叫端", desc: "跳回呼叫端。" }
+      ];
+    }
+  };
+
+  const renderContent = () => {
+    const lines = getSubCode(currentSub);
+    const quizList = window.CO_ASSIGNMENT_DATA.quizBank;
+    const qItem = quizList[currentQuizIdx % quizList.length];
+
+    container.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+        
+        <!-- 上方：程式碼導覽與逐行功能檢視器 -->
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 class="card-title" style="color: var(--primary);">MIPS 遞迴程序指令逐行解構檢視器</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                點擊下方任一行組合語言指令，右側（或下方）將即時展開該指令在微架構與呼叫約定上的核心功能與考卷失分陷阱！
+              </p>
+            </div>
+            <div class="mode-switch-bar">
+              <button class="mode-btn ${currentSub === 'fib' ? 'active' : ''}" id="btnSelectFib">費氏數列 fib(n)</button>
+              <button class="mode-btn ${currentSub === 'fact' ? 'active' : ''}" id="btnSelectFact">階乘 fact(n)</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-top: 1.25rem;">
+            <!-- 代碼清單 -->
+            <div style="background: #090d16; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 0.75rem; max-height: 480px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.88rem;">
+              ${lines.map((item, idx) => `
+                <div class="code-line-item ${idx === 1 ? 'selected' : ''}" data-idx="${idx}" style="padding: 0.45rem 0.65rem; margin-bottom: 0.25rem; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease;">
+                  <span style="color: #4ade80;">${escapeHtml(item.line)}</span>
+                  <span class="tag-badge tag-hw1" style="font-size: 0.7rem; font-family: sans-serif;">${item.tag}</span>
+                </div>
+              `).join("")}
+            </div>
+
+            <!-- 解構說明卡片 -->
+            <div id="lineDetailBox" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">指令責任剖析</div>
+              <h4 id="detailLineTitle" style="color: var(--primary); font-family: var(--font-mono); margin: 0.5rem 0; font-size: 1.1rem;">
+                ${escapeHtml(lines[1].line)}
+              </h4>
+              <div id="detailLineTag" style="margin-bottom: 0.75rem;">
+                <span class="tag-badge tag-hw2">${lines[1].tag}</span>
+              </div>
+              <p id="detailLineDesc" style="color: var(--text-main); line-height: 1.8; font-size: 0.92rem;">
+                ${lines[1].desc}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 下方：指令功能即時隨機抽測器 (Quiz Widget) -->
+        <div class="card" style="border-top: 3px solid #38bdf8;">
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="tag-badge tag-hw1">指令功能即時抽測</span>
+                <h3 class="card-title" style="color: #38bdf8;">「組合語言這個指令是幹嘛的？」高頻考點測驗</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                系統隨機抽取關鍵指令，考驗您對呼叫約定、暫存器責任與微架構邊界的掌握度。
+              </p>
+            </div>
+            <button class="action-btn btn-secondary" id="btnNextQuiz" style="font-size: 0.85rem; padding: 0.4rem 0.85rem;">
+              換一題抽測
+            </button>
+          </div>
+
+          <div style="margin-top: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              目標程序：<code>${qItem.subroutine === 'fib' ? 'fib(n) 雙遞迴' : 'fact(n) 階乘'}</code> | 目標指令：<strong style="color: #4ade80; font-family: var(--font-mono); font-size: 1rem;">${qItem.instruction}</strong>
+            </div>
+            <h4 style="font-size: 1rem; color: var(--text-main); line-height: 1.6; margin-bottom: 1rem;">
+              ${qItem.question}
+            </h4>
+
+            <div id="quizOptionsList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+              ${qItem.options.map((opt, optIdx) => `
+                <button class="action-btn btn-secondary quiz-opt-btn" data-idx="${optIdx}" style="text-align: left; padding: 0.75rem 1rem; font-size: 0.9rem; line-height: 1.5; border-radius: 6px; white-space: normal;">
+                  ${escapeHtml(opt)}
+                </button>
+              `).join("")}
+            </div>
+
+            <div id="quizFeedbackBox" style="display: none; margin-top: 1.25rem; padding: 1rem 1.25rem; border-radius: var(--radius); font-size: 0.9rem; line-height: 1.7;"></div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // 綁定切換程式按鈕
+    const btnFib = container.querySelector("#btnSelectFib");
+    const btnFact = container.querySelector("#btnSelectFact");
+    if (btnFib) btnFib.onclick = () => { currentSub = "fib"; renderContent(); };
+    if (btnFact) btnFact.onclick = () => { currentSub = "fact"; renderContent(); };
+
+    // 綁定代碼點擊
+    const lineItems = container.querySelectorAll(".code-line-item");
+    const titleEl = container.querySelector("#detailLineTitle");
+    const tagEl = container.querySelector("#detailLineTag");
+    const descEl = container.querySelector("#detailLineDesc");
+
+    lineItems.forEach(el => {
+      el.onclick = () => {
+        lineItems.forEach(x => {
+          x.style.background = "transparent";
+          x.classList.remove("selected");
+        });
+        el.style.background = "rgba(56, 189, 248, 0.15)";
+        el.classList.add("selected");
+        const idx = parseInt(el.getAttribute("data-idx"), 10);
+        const data = lines[idx];
+        if (titleEl) titleEl.textContent = data.line;
+        if (tagEl) tagEl.innerHTML = `<span class="tag-badge tag-hw2">${data.tag}</span>`;
+        if (descEl) descEl.textContent = data.desc;
+      };
+    });
+
+    // 綁定 Quiz
+    const btnNext = container.querySelector("#btnNextQuiz");
+    if (btnNext) {
+      btnNext.onclick = () => {
+        currentQuizIdx = Math.floor(Math.random() * quizList.length);
+        renderContent();
+      };
+    }
+
+    const optBtns = container.querySelectorAll(".quiz-opt-btn");
+    const fbBox = container.querySelector("#quizFeedbackBox");
+
+    optBtns.forEach(btn => {
+      btn.onclick = () => {
+        const chosen = parseInt(btn.getAttribute("data-idx"), 10);
+        optBtns.forEach(b => b.disabled = true);
+        fbBox.style.display = "block";
+        if (chosen === qItem.correctIndex) {
+          btn.style.background = "rgba(74, 222, 128, 0.25)";
+          btn.style.borderColor = "var(--success)";
+          fbBox.style.background = "rgba(74, 222, 128, 0.1)";
+          fbBox.style.border = "1px solid var(--success)";
+          fbBox.innerHTML = `
+            <div style="font-weight: 700; color: var(--success); margin-bottom: 0.35rem;">作答正確！完全掌握微架構約定。</div>
+            <div style="color: var(--text-main);">${qItem.explanation}</div>
+          `;
+        } else {
+          btn.style.background = "rgba(244, 63, 94, 0.25)";
+          btn.style.borderColor = "var(--error)";
+          optBtns[qItem.correctIndex].style.background = "rgba(74, 222, 128, 0.25)";
+          optBtns[qItem.correctIndex].style.borderColor = "var(--success)";
+          fbBox.style.background = "rgba(244, 63, 94, 0.1)";
+          fbBox.style.border = "1px solid var(--error)";
+          fbBox.innerHTML = `
+            <div style="font-weight: 700; color: var(--error); margin-bottom: 0.35rem;">作答未通過！期中考扣分陷阱警告。</div>
+            <div style="color: var(--text-main);">${qItem.explanation}</div>
+          `;
+        }
+      };
+    });
+  };
+
+  renderContent();
+}
+
+// ---------------------------------------------------------------------------
+// 子視圖 2：手寫默寫特訓（挖空填空與全程式白板）
+// ---------------------------------------------------------------------------
+function renderHwSubView2() {
+  const container = document.getElementById("hwSubView2");
+  if (!container || !window.CO_ASSIGNMENT_DATA) return;
+
+  let currentSub = "fib"; // "fib" or "fact"
+
+  const renderContent = () => {
+    const blankData = window.CO_ASSIGNMENT_DATA.fillBlanks[currentSub];
+
+    container.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+        
+        <!-- Part A: 關鍵指令挖空填空題 -->
+        <div class="card">
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="tag-badge tag-hw1">手寫實戰填空</span>
+                <h3 class="card-title" style="color: var(--primary);">${blankData.title}</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                ${blankData.description}
+              </p>
+            </div>
+            <div class="mode-switch-bar">
+              <button class="mode-btn ${currentSub === 'fib' ? 'active' : ''}" id="btnBlankFib">費氏數列 (6 空格)</button>
+              <button class="mode-btn ${currentSub === 'fact' ? 'active' : ''}" id="btnBlankFact">階乘 (4 空格)</button>
+            </div>
+          </div>
+
+          <!-- 代碼填空區塊 -->
+          <div style="margin-top: 1.25rem; background: #090d16; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1rem 1.25rem; font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.9; max-height: 520px; overflow-y: auto;">
+            ${blankData.codeLines.map(line => {
+              if (!line.isBlank) {
+                return `<div style="color: #94a3b8;"><span style="color: #475569; display: inline-block; width: 30px; user-select: none;">${line.num}</span>${escapeHtml(line.text)}</div>`;
+              } else {
+                const parts = line.text.split(/\[BLANK_\d+\]/);
+                return `
+                  <div style="color: #e2e8f0; margin: 0.25rem 0;">
+                    <span style="color: #475569; display: inline-block; width: 30px; user-select: none;">${line.num}</span>
+                    ${escapeHtml(parts[0])}
+                    <input type="text" class="hw-blank-input" data-blank-id="${line.blankId}" placeholder="鍵入指令..." style="background: #1e293b; color: #38bdf8; border: 1px solid #64748b; border-radius: 4px; padding: 0.25rem 0.5rem; font-family: var(--font-mono); font-size: 0.88rem; width: 220px;" />
+                    <span class="blank-status" id="status_${line.blankId}" style="margin-left: 0.5rem; font-weight: 700; font-size: 0.85rem;"></span>
+                    <span style="color: #64748b;">${escapeHtml(parts[1] || "")}</span>
+                  </div>
+                `;
+              }
+            }).join("")}
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 1.25rem; flex-wrap: wrap;">
+            <button class="action-btn btn-primary" id="btnVerifyBlanks">檢查填空答案</button>
+            <button class="action-btn btn-secondary" id="btnRevealBlanks">顯示正確解答</button>
+            <span id="blankScoreSummary" style="font-weight: 700; font-size: 0.95rem;"></span>
+          </div>
+        </div>
+
+        <!-- Part B: 期中考手寫白板模式 (Scratchpad Code Auditor) -->
+        <div class="card" style="border-top: 3px solid #c084fc;">
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="tag-badge tag-hw2">白板默寫挑戰</span>
+                <h3 class="card-title" style="color: #c084fc;">期中考全真白板手寫程式碼檢核器（「直接叫我們寫出來」）</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                在下方編輯框中從零手寫出完整的副程式（包括 Prologue、Base Case、遞迴步驟、Epilogue 與 jr $ra）。點擊送出後，系統將自動進行堆疊平衡、暫存器保護與呼叫約定 6 重靜態檢核！
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="action-btn btn-secondary" id="btnLoadTemplateFib" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">載入 fib 骨架</button>
+              <button class="action-btn btn-secondary" id="btnLoadTemplateFact" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">載入 fact 骨架</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.25rem;">
+            <textarea id="hwScratchpadCode" style="width: 100%; height: 260px; background: #090d16; color: #a5f3fc; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1rem; font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.6; resize: vertical;" placeholder="# 請在此處手寫完整的 MIPS 組合語言副程式...&#10;fib:&#10;    addi $sp, $sp, -12&#10;    sw   $ra, 8($sp)..."></textarea>
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <button class="action-btn btn-primary" id="btnAuditCode" style="background: #a855f7; border-color: #a855f7;">執行靜態呼叫約定檢核</button>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">測試對象：</span>
+            <label style="font-size: 0.9rem; cursor: pointer;"><input type="radio" name="auditTarget" value="fib" checked /> 費氏數列 fib</label>
+            <label style="font-size: 0.9rem; cursor: pointer;"><input type="radio" name="auditTarget" value="fact" /> 階乘 fact</label>
+          </div>
+
+          <div id="hwAuditResultBox" style="display: none; margin-top: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem;"></div>
+        </div>
+
+      </div>
+    `;
+
+    // 綁定填空切換
+    const btnBFib = container.querySelector("#btnBlankFib");
+    const btnBFact = container.querySelector("#btnBlankFact");
+    if (btnBFib) btnBFib.onclick = () => { currentSub = "fib"; renderContent(); };
+    if (btnBFact) btnBFact.onclick = () => { currentSub = "fact"; renderContent(); };
+
+    // 填空驗證
+    const btnVBlanks = container.querySelector("#btnVerifyBlanks");
+    const btnRBlanks = container.querySelector("#btnRevealBlanks");
+    const scoreSum = container.querySelector("#blankScoreSummary");
+
+    if (btnVBlanks) {
+      btnVBlanks.onclick = () => {
+        let correctCount = 0;
+        let totalBlanks = 0;
+
+        blankData.codeLines.forEach(line => {
+          if (!line.isBlank) return;
+          totalBlanks++;
+          const input = container.querySelector(`input[data-blank-id="${line.blankId}"]`);
+          const status = container.querySelector(`#status_${line.blankId}`);
+          if (!input || !status) return;
+
+          const userVal = input.value.trim().toLowerCase().replace(/\s+/g, " ");
+          const stdVal = line.answer.trim().toLowerCase().replace(/\s+/g, " ");
+          const alts = (line.altAnswers || []).map(a => a.trim().toLowerCase().replace(/\s+/g, " "));
+
+          const isMatch = (userVal === stdVal) || alts.includes(userVal);
+          if (isMatch) {
+            correctCount++;
+            input.style.borderColor = "var(--success)";
+            input.style.background = "rgba(74, 222, 128, 0.15)";
+            status.style.color = "var(--success)";
+            status.textContent = "正確";
+          } else {
+            input.style.borderColor = "var(--error)";
+            input.style.background = "rgba(244, 63, 94, 0.15)";
+            status.style.color = "var(--error)";
+            status.textContent = `錯誤（應填: ${line.answer}）`;
+          }
+        });
+
+        scoreSum.innerHTML = `<span style="color: ${correctCount === totalBlanks ? 'var(--success)' : 'var(--error)'};">得分：${correctCount} / ${totalBlanks} (${Math.round(correctCount / totalBlanks * 100)} 分)</span>`;
+      };
+    }
+
+    if (btnRBlanks) {
+      btnRBlanks.onclick = () => {
+        blankData.codeLines.forEach(line => {
+          if (!line.isBlank) return;
+          const input = container.querySelector(`input[data-blank-id="${line.blankId}"]`);
+          const status = container.querySelector(`#status_${line.blankId}`);
+          if (input) input.value = line.answer;
+          if (status) {
+            status.style.color = "var(--primary)";
+            status.textContent = "標準答案";
+          }
+        });
+      };
+    }
+
+    // 骨架載入
+    const pad = container.querySelector("#hwScratchpadCode");
+    const btnLoadFib = container.querySelector("#btnLoadTemplateFib");
+    const btnLoadFact = container.querySelector("#btnLoadTemplateFact");
+
+    if (btnLoadFib && pad) {
+      btnLoadFib.onclick = () => {
+        pad.value = `fib:
+    addi $sp, $sp, -12
+    sw   $ra, 8($sp)
+    sw   $s0, 4($sp)
+    sw   $a0, 0($sp)
+    
+    beq  $a0, $zero, fib_base0
+    li   $t0, 1
+    beq  $a0, $t0, fib_base1
+    
+    # 第一次遞迴
+    addi $a0, $a0, -1
+    jal  fib
+    move $s0, $v0
+    
+    # 第二次遞迴
+    lw   $a0, 0($sp)
+    addi $a0, $a0, -2
+    jal  fib
+    
+    add  $v0, $s0, $v0
+    j    fib_return
+
+fib_base0:
+    li   $v0, 0
+    j    fib_return
+
+fib_base1:
+    li   $v0, 1
+
+fib_return:
+    lw   $a0, 0($sp)
+    lw   $s0, 4($sp)
+    lw   $ra, 8($sp)
+    addi $sp, $sp, 12
+    jr   $ra`;
+      };
+    }
+
+    if (btnLoadFact && pad) {
+      btnLoadFact.onclick = () => {
+        pad.value = `fact:
+    addi $sp, $sp, -8
+    sw   $ra, 4($sp)
+    sw   $a0, 0($sp)
+    
+    slti $t0, $a0, 1
+    beq  $t0, $zero, L1
+    
+    li   $v0, 1
+    addi $sp, $sp, 8
+    jr   $ra
+
+L1:
+    addi $a0, $a0, -1
+    jal  fact
+    lw   $a0, 0($sp)
+    lw   $ra, 4($sp)
+    addi $sp, $sp, 8
+    mul  $v0, $a0, $v0
+    jr   $ra`;
+      };
+    }
+
+    // 審查按鈕
+    const btnAudit = container.querySelector("#btnAuditCode");
+    const auditResBox = container.querySelector("#hwAuditResultBox");
+
+    if (btnAudit && pad && auditResBox) {
+      btnAudit.onclick = () => {
+        const code = pad.value;
+        const target = container.querySelector('input[name="auditTarget"]:checked').value;
+        const report = window.CO_ASSIGNMENT_DATA.auditCode(code, target);
+
+        auditResBox.style.display = "block";
+        auditResBox.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <div>
+              <span style="font-weight: 700; font-size: 1.1rem; color: var(--primary);">靜態審查綜合判定：${report.verdict}</span>
+            </div>
+            <span class="badge ${report.score >= 90 ? 'badge-success' : (report.score >= 60 ? 'badge-warning' : 'badge-danger')}" style="font-size: 1rem; padding: 0.4rem 0.8rem;">
+              評分：${report.score} / 100
+            </span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            ${report.checks.map(c => `
+              <div style="background: ${c.pass ? 'rgba(74, 222, 128, 0.08)' : 'rgba(244, 63, 94, 0.08)'}; border-left: 4px solid ${c.pass ? 'var(--success)' : 'var(--error)'}; padding: 0.75rem 1rem; border-radius: 4px;">
+                <div style="font-weight: 700; color: ${c.pass ? 'var(--success)' : 'var(--error)'}; font-size: 0.95rem;">
+                  ${c.pass ? 'PASS' : 'FAIL'}：${c.name}
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">
+                  ${c.detail}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      };
+    }
+  };
+
+  renderContent();
+}
+
+// ---------------------------------------------------------------------------
+// 子視圖 3：作業一 7 大動態變種題庫刷題
+// ---------------------------------------------------------------------------
+function renderHwSubView3() {
+  const container = document.getElementById("hwSubView3");
+  if (!container || !window.CO_ASSIGNMENT_DATA) return;
+
+  const list = window.CO_ASSIGNMENT_DATA.hw1DynamicVariants;
+
+  container.innerHTML = `
+    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #f59e0b;">
+      <h3 class="card-title" style="color: #f59e0b;">作業一高頻必考動態變種練習題庫</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+        授課教授特別指出：<strong>作業一的計算題型在期中考佔比極高！</strong>以下題目皆已參數化，每次點擊「換一題（隨機數值）」即刻動態生成全新考題與公式對帳。
+      </p>
+    </div>
+    <div id="hw1CardsContainer"></div>
+  `;
+
+  const cardsContainer = container.querySelector("#hw1CardsContainer");
+  if (!cardsContainer) return;
+
+  list.forEach(itemDef => {
+    const card = document.createElement("div");
+    card.className = "card calc-card-item";
+    card.style.marginBottom = "1.5rem";
+
+    let instance = window.CO_SOLVER.instantiateQuestion(itemDef);
+
+    const renderCard = () => {
+      card.innerHTML = `
+        <div class="card-header" style="flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span class="tag-badge tag-hw1">HW1 必考</span>
+            <span class="badge badge-primary">${itemDef.category}</span>
+            <h3 class="card-title" style="font-size: 1.05rem;">${itemDef.title}</h3>
+          </div>
+          <button class="action-btn btn-secondary btn-reroll" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+            換一題（隨機數值）
+          </button>
+        </div>
+
+        <div class="problem-description" style="margin: 1.25rem 0; font-size: 0.95rem; line-height: 1.7;">
+          ${formatMarkdown(instance.renderedText)}
+        </div>
+
+        <div class="answer-action-bar">
+          <input type="text" class="input-ctrl user-ans-input" placeholder="輸入計算答案..." style="width: 220px; font-family: var(--font-mono); font-size: 0.95rem;" />
+          <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">${instance.solution.unit || ""}</span>
+          <button class="action-btn btn-primary btn-submit-ans">送出驗證</button>
+          <span class="ans-feedback" style="font-size: 0.9rem; font-weight: 600; display: none;"></span>
+        </div>
+
+        <div class="solution-box details-box" style="margin-top: 1.25rem;">
+          <div class="solution-toggle" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.9rem; background: var(--bg-secondary); border-radius: var(--radius);">
+            <span style="font-weight: 700; color: var(--primary);">查看詳細步驟與公式推導</span>
+            <span class="toggle-arrow">▼</span>
+          </div>
+          <div class="solution-content" style="display: none; padding: 1rem 1.25rem; background: #090d16; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--radius) var(--radius); line-height: 1.7; font-size: 0.9rem;">
+            ${formatMarkdown(instance.solution.explanation)}
+          </div>
+        </div>
+      `;
+
+      const btnReroll = card.querySelector(".btn-reroll");
+      const btnSubmit = card.querySelector(".btn-submit-ans");
+      const inputAns = card.querySelector(".user-ans-input");
+      const feedbackEl = card.querySelector(".ans-feedback");
+      const solToggle = card.querySelector(".solution-toggle");
+      const solContent = card.querySelector(".solution-content");
+      const toggleArrow = card.querySelector(".toggle-arrow");
+
+      btnReroll.addEventListener("click", () => {
+        instance = window.CO_SOLVER.instantiateQuestion(itemDef);
+        renderCard();
+        window.CO_SOLVER.renderMath(card);
+      });
+
+      const doVerify = () => {
+        const val = inputAns.value.trim();
+        const res = window.CO_SOLVER.verify(itemDef.id, val);
+        feedbackEl.style.display = "inline-block";
+        feedbackEl.style.marginLeft = "0.75rem";
+        if (res.isCorrect) {
+          feedbackEl.innerHTML = `<span style="color: var(--success);">驗證正確！答案為 ${instance.solution.correctValue} ${instance.solution.unit || ""}。</span>`;
+        } else {
+          feedbackEl.innerHTML = `<span style="color: var(--error);">${res.message || "未通過！請檢查計算或展開下方步驟核對。"}</span>`;
+        }
+      };
+
+      btnSubmit.addEventListener("click", doVerify);
+      inputAns.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doVerify();
+      });
+
+      solToggle.addEventListener("click", () => {
+        const isOpen = solContent.style.display === "block";
+        solContent.style.display = isOpen ? "none" : "block";
+        toggleArrow.textContent = isOpen ? "▼" : "▲";
+        if (!isOpen) {
+          window.CO_SOLVER.renderMath(solContent);
+        }
+      });
+    };
+
+    renderCard();
+    cardsContainer.appendChild(card);
+    window.CO_SOLVER.renderMath(card);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 子視圖 4：期中筆試 5 大致命陷阱與 MARS 實戰指南
+// ---------------------------------------------------------------------------
+function renderHwSubView4() {
+  const container = document.getElementById("hwSubView4");
+  if (!container) return;
+
+  container.innerHTML = `
+    <!-- Assignment 1 原真表格摘要 -->
     <div class="card assignment-section">
       <div class="card-header">
         <div>
-          <h2 class="card-title" style="color: var(--primary);">Assignment #1 全真題型核心解構與期中考點</h2>
-          <span style="font-size: 0.85rem; color: var(--text-muted);">涵蓋 Chapter 1 & 2：老師特別交代作業一題型為期中考試最高頻命中題型！</span>
+          <h2 class="card-title" style="color: var(--primary);">Assignment #1 全真題型核心解構與速查表</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">涵蓋 Chapter 1 & 2：作業一全題型解題關鍵與易錯陷阱對照</span>
         </div>
-        <span class="tag-badge tag-hw1">HW1 必考專區</span>
+        <span class="tag-badge tag-hw1">HW1 必考手冊</span>
       </div>
 
       <div style="margin-top: 1.25rem;">
@@ -522,8 +1199,8 @@ function renderAssignmentsLab() {
               <td>多指令類別加權 CPI 與執行時間</td>
               <td>
                 P1 (2.5 GHz, CPI: 1, 2, 3, 3) vs P2 (3 GHz, CPI: 2, 2, 2, 2)。動態指令數 1.0E6 (10%, 20%, 50%, 20%)。<br>
-                $\\text{CPI}_{P1} = 0.1(1) + 0.2(2) + 0.5(3) + 0.2(3) = 2.6$。時脈週期數 $= 2.6 \\times 10^6$。時間 $= 1.04$ ms。<br>
-                $\\text{CPI}_{P2} = 2.0$。時脈週期數 $= 2.0 \\times 10^6$。時間 $= 0.67$ ms。<strong>P2 較快</strong>。
+                $\\text{CPI}_{P1} = 0.1(1) + 0.2(2) + 0.5(3) + 0.2(3) = 2.6$。時間 $= 1.04$ ms。<br>
+                $\\text{CPI}_{P2} = 2.0$。時間 $= 0.67$ ms。<strong>P2 較快</strong>。
               </td>
             </tr>
             <tr>
@@ -531,7 +1208,7 @@ function renderAssignmentsLab() {
               <td>編譯器效能衝擊與加速比</td>
               <td>
                 Compiler A (1.0E9 指令, 1.1s) vs Compiler B (1.2E9 指令, 1.5s)，週期 1ns。<br>
-                $\\text{CPI}_A = 1.1 / (10^9 \\times 10^{-9}) = 1.1$；$\\text{CPI}_B = 1.5 / (1.2 \\times 10^9 \\times 10^{-9}) = 1.25$。<br>
+                $\\text{CPI}_A = 1.1$；$\\text{CPI}_B = 1.25$。<br>
                 新編譯器 (6.0E8 指令, CPI 1.1) 耗時 $= 0.66$s。相對 A 加速比 $= 1.1 / 0.66 = 1.67$ 倍。
               </td>
             </tr>
@@ -540,14 +1217,7 @@ function renderAssignmentsLab() {
               <td>阿姆達爾定律單一部件極限</td>
               <td>
                 總時間 250s (FP: 70s, L/S: 85s, Branch: 40s, INT: 55s)。<br>
-                若要求僅透過分支單元將總時間縮短 20% (需減少 50s)：因為分支總時間只有 40s，即使降為 0s 最多只能省 40s，因此<strong>物理上不可能達成 (Unattainable)</strong>！
-              </td>
-            </tr>
-            <tr>
-              <td><strong>第 5 題</strong></td>
-              <td>指令 CPI 改進極限與倒推</td>
-              <td>
-                能否僅改善 FP CPI 讓程式加速 2 倍？計算非 FP 部分時間是否已經超過總時間的一半；若超過則無法達成。
+                若要求透過分支單元將總時間縮短 20% (需減少 50s)：因分支總時間只有 40s，即使降為 0s 最多只能省 40s，因此<strong>物理上不可能達成 (Unattainable)</strong>！
               </td>
             </tr>
             <tr>
@@ -562,16 +1232,8 @@ function renderAssignmentsLab() {
               <td><strong>第 7 題</strong></td>
               <td>條件迴圈逆向還原與指令計數</td>
               <td>
-                \`slt $t2, $0, $t1\` 搭配 \`beq $t2, $0, DONE\` $\\implies$ C 語言 \`while(i > 0) { i--; B += 2; }\`。<br>
-                當 $t1 = 10, s2 = 0$ 初始時，結束 $s2 = 20$。動態執行指令數為 $5N + 2$（退出檢查 2 條指令）。
-              </td>
-            </tr>
-            <tr>
-              <td><strong>第 8 題</strong></td>
-              <td>記憶體指標步進累加迴圈</td>
-              <td>
-                \`lw $s1, 0($s0)\` 搭配 \`addi $s0, $s0, 4\` $\\implies$ \`for (i=0; i<100; i++) { result += MemArray[i]; }\`。<br>
-                陷阱：題目要求 preserve initial value of result，不可寫 \`result = 0;\`！
+                \`slt $t2, $0, $t1\` 搭配 \`beq $t2, $0, DONE\` $\\implies$ \`while(i > 0) { i--; B += 2; }\`。<br>
+                當 $t1 = 10, s2 = 0$ 初始時，結束 $s2 = 20$。動態執行指令數為 $5N + 2$（最後退出檢查 2 條）。
               </td>
             </tr>
             <tr>
@@ -586,289 +1248,66 @@ function renderAssignmentsLab() {
       </div>
     </div>
 
-    <!-- Assignment 2 核心攻略 -->
+    <!-- 期中考筆試手寫 5 大致命陷阱與命題形式深度解剖 -->
     <div class="card assignment-section">
       <div class="card-header">
         <div>
-          <h2 class="card-title" style="color: #c084fc;">Assignment #2 遞迴費氏數列（Recursive Fibonacci in MIPS MARS）實戰指南</h2>
-          <span style="font-size: 0.85rem; color: var(--text-muted);">深入拆解：函式呼叫約定 (Calling Convention)、雙遞迴堆疊保護與 MARS 模擬器操作</span>
+          <h2 class="card-title" style="color: #fb7185;">期中考筆試手寫 5 大致命陷阱與命題形式深度解剖</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">雙遞迴與呼叫約定逐行改卷扣分標準</span>
         </div>
-        <span class="tag-badge tag-hw2">HW2 專題解析</span>
+        <span class="tag-badge tag-hw2">手寫必考陷阱</span>
       </div>
 
-      <div style="margin-top: 1.25rem;">
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 0.5rem;">一、作業規範核心精要 (Program Requirements)</h3>
-        <ul style="margin-left: 1.5rem; line-height: 1.8; color: var(--text-muted); font-size: 0.92rem;">
-          <li><strong>定義</strong>：$F(0) = 0$，$F(1) = 1$，$F(n) = F(n - 1) + F(n - 2)$ (for $n \\ge 2$)。</li>
-          <li><strong>輸入驗證</strong>：自終端讀取整數 $n$，限制 $0 \\le n \\le 20$。超出範圍必須顯示錯誤訊息並重新提示輸入，直到輸入合法。</li>
-          <li><strong>嚴格遞迴實作</strong>：必須實作名為 \`fib\` 的遞迴程序。當 $n \\ge 2$ 時分別呼叫 \`fib(n-1)\` 與 \`fib(n-2)\` 並相加。<strong>嚴禁使用迴圈或建表查值替代</strong>！</li>
-          <li><strong>暫存器約定</strong>：引數 $n$ 由 \`$a0\` 傳入，傳回值放於 \`$v0\`。呼叫使用 \`jal\`，返回使用 \`jr $ra\`。</li>
-          <li><strong>輸出格式</strong>：印出完整的 $F(0), F(1), \\dots, F(n)$（共 $n+1$ 項），以逗號或空格分隔。</li>
-        </ul>
-
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">二、雙遞迴堆疊訊框（Stack Frame Layout）圖解</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          在執行雙遞迴函式時，每次呼叫 \`fib\` 需在堆疊配置 12 位元組（3 個 Word）空間。為什麼需要這三個暫存器？
-        </p>
-        
-        <div class="stack-frame-visual">
-+------------------------------------------+  <-- 進入前的高位址 (Higher Address)
-|   舊返回位址 ($ra)       [Offset: 8($sp)] |  (防止內層 jal fib 覆寫上一層返回位址)
-+------------------------------------------+
-|   被保護暫存器 ($s0)     [Offset: 4($sp)] |  (儲存第一次遞迴 fib(n-1) 的結果，防止被 fib(n-2) 覆蓋)
-+------------------------------------------+
-|   傳入引數 ($a0 = n)     [Offset: 0($sp)] |  (保存本層的 n，供遞迴返回後計算 n - 2 使用)
-+------------------------------------------+  <-- 當前堆疊頂端 ($sp，每次配置 addi $sp, $sp, -12)
+      <div style="margin-top: 1.25rem; line-height: 1.8;">
+        <!-- 考點 1 -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f43f5e;">
+          <div style="font-weight: 700; color: #fb7185; font-size: 1rem; margin-bottom: 0.5rem;">
+            致命考點 1：Non-leaf Procedure 的 $ra 覆寫與返回位址遺失（死迴圈陷阱）
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            若副程式內部有 <code>jal</code>（Non-leaf），<code>jal fib</code> 會把硬體 PC+4 強制寫入 <code>$ra</code>。若沒有在進入時把呼叫端的 <code>$ra</code> 存入堆疊保護，當執行 <code>jr $ra</code> 時將跳回自身內部，產生永久無窮迴圈！
+          </div>
         </div>
 
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">三、以 F(3) 為例之遞迴呼叫展開樹與暫存器安全性分析</h3>
-        <div style="background: var(--bg-secondary); padding: 1rem 1.25rem; border-radius: var(--radius); border: 1px solid var(--border-color); font-size: 0.9rem; line-height: 1.8;">
-          <p><strong>呼叫順序與堆疊深度變化</strong>：</p>
-          <ol style="margin-left: 1.25rem; color: var(--text-muted);">
-            <li><code>main</code> 呼叫 <code>fib(3)</code>：堆疊深度 1，保存 $a0=3$。</li>
-            <li><code>fib(3)</code> 呼叫 <code>fib(2)</code>：堆疊深度 2，保存 $a0=2$。</li>
-            <li><code>fib(2)</code> 呼叫 <code>fib(1)</code>：命中 Base case，直接在 <code>$v0</code> 回傳 1。</li>
-            <li><code>fib(2)</code> 取回 <code>$v0=1</code>，將其暫存至 <code>$s0</code>。隨後從堆疊載回 $a0=2$，計算 $a0-2=0$，呼叫 <code>fib(0)</code>。</li>
-            <li><code>fib(0)</code> 命中 Base case，回傳 0。</li>
-            <li><code>fib(2)</code> 將 <code>$s0 + $v0</code> (即 1 + 0 = 1) 存入 <code>$v0</code>，釋放堆疊返回。</li>
-            <li><code>fib(3)</code> 取得 <code>fib(2) = 1</code>，存入 <code>$s0</code>。隨後載回 $a0=3$，呼叫 <code>fib(1)</code> 得 1。相加 $1 + 1 = 2$ 回傳！</li>
-          </ol>
+        <!-- 考點 2 -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f59e0b;">
+          <div style="font-weight: 700; color: #f59e0b; font-size: 1rem; margin-bottom: 0.5rem;">
+            致命考點 2：引數 $a0 被子呼叫污染，第二次呼叫前漏寫 lw $a0（邏輯全毀陷阱）
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            第一次子呼叫返回後，<code>$a0</code> 已被子層改為 Base case 的殘留值。呼叫 <code>fib(n - 2)</code> 前，<strong>必須先自堆疊 <code>lw $a0, 0($sp)</code> 還原原始 $n$</strong>，否則參數全毀！
+          </div>
         </div>
 
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">四、完整 MARS 可組譯執行原始碼架構 (Reference Code Structure)</h3>
-        <div class="code-panel">
-          <div class="code-panel-header">
-            <span>StudentID_Assignment2_fib.asm (MARS 完全相容範本)</span>
+        <!-- 考點 3 -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #38bdf8;">
+          <div style="font-weight: 700; color: #38bdf8; font-size: 1rem; margin-bottom: 0.5rem;">
+            致命考點 3：雙遞迴回傳值覆寫與 Callee-Saved 暫存器約定（$s0 vs. $v0）
           </div>
-          <pre class="code-content" style="color: #a5f3fc; max-height: 400px; overflow-y: auto;">
-.data
-prompt:     .asciiz "Enter n (0-20): "
-err_msg:    .asciiz "Invalid input. Please enter a value from 0 to 20.\\n"
-seq_msg:    .asciiz "Fibonacci sequence: "
-comma:      .asciiz ", "
-newline:    .asciiz "\\n"
-
-.text
-.globl main
-
-main:
-    # 1. 輸入驗證迴圈 (Input Validation Loop)
-read_loop:
-    li   $v0, 4
-    la   $a0, prompt
-    syscall
-    
-    li   $v0, 5          # 讀取整數
-    syscall
-    move $s1, $v0        # $s1 儲存使用者輸入的 n
-    
-    # 邊界判定: 0 &lt;= n &lt;= 20
-    bltz $s1, invalid_input
-    li   $t0, 20
-    bgt  $s1, $t0, invalid_input
-    j    input_valid
-
-invalid_input:
-    li   $v0, 4
-    la   $a0, err_msg
-    syscall
-    j    read_loop
-
-input_valid:
-    li   $v0, 4
-    la   $a0, seq_msg
-    syscall
-    
-    # 2. 依序計算並印出 F(0) 至 F(n) (共 n + 1 項)
-    li   $s2, 0          # $s2 為迴圈變數 i = 0
-print_loop:
-    bgt  $s2, $s1, exit_main
-    
-    # 呼叫遞迴函式 fib(i)
-    move $a0, $s2
-    jal  fib
-    move $s3, $v0        # $s3 = F(i)
-    
-    # 印出整數 F(i)
-    li   $v0, 1
-    move $a0, $s3
-    syscall
-    
-    # 若非最後一項，印出逗號分隔
-    beq  $s2, $s1, skip_comma
-    li   $v0, 4
-    la   $a0, comma
-    syscall
-skip_comma:
-    addi $s2, $s2, 1
-    j    print_loop
-
-exit_main:
-    li   $v0, 4
-    la   $a0, newline
-    syscall
-    li   $v0, 10         # 系統呼叫: 正常結束程式
-    syscall
-
-# -----------------------------------------------------------
-# 遞迴程序 fib: 計算 F(n)
-# 引數: $a0 = n
-# 回傳: $v0 = F(n)
-# -----------------------------------------------------------
-fib:
-    addi $sp, $sp, -12   # 配置 12 bytes 堆疊框架
-    sw   $ra, 8($sp)     # 保存返回位址
-    sw   $s0, 4($sp)     # 保存 Callee-saved 暫存器 $s0
-    sw   $a0, 0($sp)     # 保存當前引數 n
-    
-    # Base Case: n == 0 -&gt; 回傳 0
-    beq  $a0, $zero, fib_base0
-    
-    # Base Case: n == 1 -&gt; 回傳 1
-    li   $t0, 1
-    beq  $a0, $t0, fib_base1
-    
-    # Recursive Step 1: fib(n - 1)
-    addi $a0, $a0, -1
-    jal  fib
-    move $s0, $v0        # 安全保存 fib(n-1) 之結果至 $s0
-    
-    # Recursive Step 2: fib(n - 2)
-    lw   $a0, 0($sp)     # 還原原始 n
-    addi $a0, $a0, -2
-    jal  fib             # $v0 = fib(n-2)
-    
-    # 合併兩者結果: $v0 = fib(n-1) + fib(n-2)
-    add  $v0, $s0, $v0
-    j    fib_return
-
-fib_base0:
-    li   $v0, 0
-    j    fib_return
-
-fib_base1:
-    li   $v0, 1
-
-fib_return:
-    lw   $a0, 0($sp)     # 還原暫存器
-    lw   $s0, 4($sp)
-    lw   $ra, 8($sp)
-    addi $sp, $sp, 12    # 釋放堆疊框架
-    jr   $ra             # 返回呼叫端
-          </pre>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            第一次 <code>jal fib</code> 的回傳值在 <code>$v0</code>，第二次呼叫會覆寫 <code>$v0</code>，故必須暫存至 <code>$s0</code>。而 <code>$s0</code> 屬於 Callee-Saved，進入函式時必須 <code>sw $s0</code>，離開前必須 <code>lw $s0</code> 還原，以防破壞呼叫端的變數！
+          </div>
         </div>
 
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">五、錄影展示（3–10 分鐘英文口說解說）高分關鍵指引</h3>
-        <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #c084fc; font-size: 0.9rem; line-height: 1.8;">
-          <p><strong>影片評分佔比高達 40%，教授與助教評估的核心重點</strong>：</p>
-          <ul style="margin-left: 1.25rem; color: var(--text-muted);">
-            <li><strong>展示四組測試數值</strong>：影片一開始必須依序在 MARS 執行展示 $n = 0, 1, 5, 10$ 之輸出，並示範輸入 $50$ 或 $-5$ 觸發驗證重試。</li>
-            <li><strong>使用 F(3) 單步除錯 (Single-Stepping)</strong>：在 \`fib\` 入口處下中斷點，展示 MARS 右下角 Registers 視窗中 <code>$sp</code> 位址數值的遞減（每次減 12）以及 Data Segment 堆疊空間中寫入的數值。</li>
-            <li><strong>重點解釋「為何第一次結果放在 $s0」</strong>：向鏡頭明確指出若不移至 <code>$s0</code>，第二次呼叫 <code>jal fib</code> 會把 <code>$v0</code> 覆寫，造成計算錯誤。</li>
-            <li><strong>發音與文法不計分</strong>：專注於邏輯說明與程式對齊，保持冷靜分析的口吻即可。</li>
-          </ul>
-        
-        <h3 style="color: #fb7185; font-size: 1.15rem; margin: 2rem 0 0.75rem 0;">六、期中考筆試手寫 5 大致命陷阱與命題形式深度解剖【手寫考試必抓分】</h3>
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; line-height: 1.8;">
-          <p style="color: var(--text-main); font-weight: 700; margin-bottom: 1rem;">
-            作業二的雙遞迴（Double Recursion）是期中考「MIPS 組合語言手寫題」出題率極高的核心題材。教授在筆試改考卷時，專門針對以下 5 個觀念細節逐行扣分：
-          </p>
-
-          <!-- 考點 1 -->
-          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f43f5e;">
-            <div style="font-weight: 700; color: #fb7185; font-size: 1rem; margin-bottom: 0.5rem;">
-              致命考點 1：Non-leaf Procedure 的 $ra 覆寫與返回位址遺失（死迴圈陷阱）
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted);">
-              <ul style="margin-left: 1.25rem;">
-                <li><strong>教授考法</strong>：給一段省略了 <code>sw $ra, 8($sp)</code> 的遞迴代碼，問程式執行後會產生何種致命錯誤？</li>
-                <li><strong>根本原因</strong>：若副程式內部有 <code>jal</code>（Non-leaf），<code>jal fib</code> 會把硬體 PC+4 強制寫入 <code>$ra</code>。若沒有在進入時把呼叫端（如 main 或上一層）的 <code>$ra</code> 推入堆疊保護，當執行 <code>jr $ra</code> 時，<code>$ra</code> 永遠指在 <code>jal fib</code> 的下一行，導致程式永遠無法返回上一層，陷入永久死迴圈！</li>
-                <li><strong>手寫黃金準則</strong>：只要副程式內部有任何 <code>jal</code>，Prologue 必須第一時間 <code>sw $ra, offset($sp)</code>，Epilogue 必須 <code>lw $ra, offset($sp)</code>。</li>
-              </ul>
-            </div>
+        <!-- 考點 4 -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #c084fc;">
+          <div style="font-weight: 700; color: #c084fc; font-size: 1rem; margin-bottom: 0.5rem;">
+            致命考點 4：Base Case（n < 2）堆疊指標失衡（Stack Leak 記憶體洩漏）
           </div>
-
-          <!-- 考點 2 -->
-          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #f59e0b;">
-            <div style="font-weight: 700; color: #f59e0b; font-size: 1rem; margin-bottom: 0.5rem;">
-              致命考點 2：引數 $a0 被子呼叫污染，第二次呼叫前漏寫 lw $a0（邏輯全毀陷阱）
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted);">
-              <ul style="margin-left: 1.25rem;">
-                <li><strong>常見錯誤寫法</strong>：
-                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #f87171; margin: 0.4rem 0;">
-addi $a0, $a0, -1
-jal  fib               # 計算 fib(n - 1)
-addi $a0, $a0, -2      # 致命錯誤！此時 $a0 已經被子遞迴改得面目全非！
-jal  fib</pre>
-                </li>
-                <li><strong>教授改卷標準</strong>：在呼叫 <code>fib(n - 2)</code> 前，<strong>必須先自堆疊還原原始 $n$</strong>！
-                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #4ade80; margin: 0.4rem 0;">
-lw   $a0, 4($sp)       # 關鍵！載回本層進入時保存的原始引數 n
-addi $a0, $a0, -2      # 正確計算 n - 2
-jal  fib</pre>
-                  教授改考卷時必定會特別檢查這行 <code>lw $a0</code> 有沒有寫，漏寫直接扣大分！
-                </li>
-              </ul>
-            </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            若開頭執行了 <code>addi $sp, $sp, -12</code>，命中 Base Case 時<strong>絕對不能直接 <code>jr $ra</code></strong>！必須釋放堆疊 <code>addi $sp, $sp, 12</code> 後方能 return，否則堆疊指標錯位！
           </div>
+        </div>
 
-          <!-- 考點 3 -->
-          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #38bdf8;">
-            <div style="font-weight: 700; color: #38bdf8; font-size: 1rem; margin-bottom: 0.5rem;">
-              致命考點 3：雙遞迴回傳值覆寫與 Callee-Saved 暫存器約定（$s0 vs. $v0）
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted);">
-              <ul style="margin-left: 1.25rem;">
-                <li><strong>衝突點</strong>：第一次呼叫 <code>jal fib</code> 的回傳值放在 <code>$v0</code>。當執行第二次 <code>jal fib</code> 時，第二次的回傳值會把 <code>$v0</code> 覆寫。</li>
-                <li><strong>若使用 $s0 暫存</strong>：MIPS 約定規定 <code>$s0-$s7</code> 為 <strong>Callee-Saved（被呼叫端負責保護）</strong>。如果你在 <code>fib</code> 中動用了 <code>$s0</code>，你就有義務在進入時 <code>sw $s0, 0($sp)</code>，離開時 <code>lw $s0, 0($sp)</code>！</li>
-                <li><strong>未保護的後果</strong>：外層呼叫端（如 main 函式中計數的迴圈變數 <code>i</code>）若正好使用 <code>$s0</code>，其數值會被子程序強制竄改，導致 main 函式的輸出迴圈失控。</li>
-              </ul>
-            </div>
+        <!-- 考點 5 -->
+        <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #10b981;">
+          <div style="font-weight: 700; color: #10b981; font-size: 1rem; margin-bottom: 0.5rem;">
+            致命考點 5：手寫 Trace 題型：特定 n（以 F(3) 為例）的堆疊深度與呼叫次數推算
           </div>
-
-          <!-- 考點 4 -->
-          <div style="margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #c084fc;">
-            <div style="font-weight: 700; color: #c084fc; font-size: 1rem; margin-bottom: 0.5rem;">
-              致命考點 4：Base Case（n < 2）堆疊指標失衡（Stack Leak 記憶體洩漏）
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted);">
-              <ul style="margin-left: 1.25rem;">
-                <li><strong>情境 A（先配置堆疊才檢查 Base Case）</strong>：
-                  若執行了 <code>addi $sp, $sp, -12</code> 後才檢查 <code>bne $t0, $zero, base</code>。命中 Base Case 時，<strong>絕對不能直接 <code>jr $ra</code></strong>！必須跳轉到結尾還原暫存器並執行 <code>addi $sp, $sp, 12</code> 才能 return！否則每次命中 Base Case 就遺留 12 bytes 垃圾在堆疊上。
-                </li>
-                <li><strong>情境 B（最佳化：先檢查 Base Case 才配置堆疊）</strong>：
-                  <pre style="background: #090d16; padding: 0.6rem; border-radius: 4px; color: #a5f3fc; margin: 0.4rem 0;">
-slti $t0, $a0, 2
-beq  $t0, $zero, recursive_step
-move $v0, $a0          # n &lt; 2: 直接回傳 n
-jr   $ra               # 此時未配置堆疊，可直接返回！</pre>
-                  在手寫比較題中，情境 B 避免了葉端（Leaf Nodes）不必要的 6 次記憶體存取（sw/lw），在 $n$ 較大時執行效率大幅超越情境 A！
-                </li>
-              </ul>
-            </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            計算 $F(n)$ 的總呼叫次數為 $2 \times F(n + 1) - 1$。最大堆疊深度為 $n$ 個訊框，空間消耗為 $12n$ 位元組（空間複雜度 $O(n)$，而非時間複雜度 $O(2^n)$）。
           </div>
-
-          <!-- 考點 5 -->
-          <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid #10b981;">
-            <div style="font-weight: 700; color: #10b981; font-size: 1rem; margin-bottom: 0.5rem;">
-              致命考點 5：手寫 Trace 題型：特定 n（以 F(3) 為例）的堆疊深度與呼叫次數推算
-            </div>
-            <div style="font-size: 0.9rem; color: var(--text-muted);">
-              <ul style="margin-left: 1.25rem;">
-                <li><strong>呼叫次數公式</strong>：計算 $F(n)$ 的總函式呼叫次數為 $C(n) = 2 \times F(n + 1) - 1$。
-                  <br>以 $F(3)$ 為例：$F(4) = 3 \implies 2 \times 3 - 1 = $ <strong>5 次呼叫</strong>（$F(3) \to F(2) \to F(1), F(0)$ 以及 $F(1)$）。
-                </li>
-                <li><strong>最大堆疊訊框深度</strong>：沿著左子樹最深路徑生長，最大深度為 $n$ 個訊框。
-                  <br>以 $F(3)$ 為例：最大深度為 <strong>3 個訊框</strong>（$F(3) \to F(2) \to F(1)$），共佔用 $3 \times 12 = $ <strong>36 位元組</strong>！
-                </li>
-                <li><strong>堆疊指標變化</strong>：初始 $sp$ 為 <code>0x7FFFF000</code>，在最大深度時 $sp = \text{0x7FFFF000} - 36 = $ <code>0x7FFFEFDC</code>。
-                </li>
-              </ul>
-            </div>
-          </div>
-
-        </div></div>
+        </div>
       </div>
     </div>
   `;
@@ -936,69 +1375,6 @@ function initMockExam() {
   });
 }
 
-// 8. 新增講義擴充指南
-function renderExpansionGuide() {
-  const container = document.getElementById("expansionGuideContainer");
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">系統擴充規範：如何無痛新增後續講義 (Chapter 4, Chapter 5...)</h2>
-        <span class="badge badge-success">開發者指南</span>
-      </div>
-
-      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
-        本平台採<strong>完全解耦與資料驅動架構</strong>。已完整整合 Chapter 1、2、3 及 Assignment 1、2。未來老師發布新講義（如 Chapter 4 處理器微架構與管線化流水線 Pipeline）時，只需完成以下兩個步驟，系統將自動於導航欄、公式表、練習區與模擬考中動態掛載，無須重寫任何 UI 或控制邏輯。
-      </p>
-
-      <div class="guide-step">
-        <h4>步驟一：在 <code>js/data/</code> 資料夾建立新章節檔案（如 <code>chapter4.js</code>）</h4>
-        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-          定義章節重點、公式速查以及計算題求解器模板：
-        </p>
-        <pre><code>// js/data/chapter4.js
-window.CO_DATA = window.CO_DATA || { chapters: [], translations: [] };
-
-window.CO_DATA.chapters.push({
-  id: "ch4",
-  title: "Chapter 4: 處理器架構與管線化 (The Processor)",
-  shortTitle: "Ch4 管線化處理器",
-  summary: [
-    { heading: "1. 5 階管線化架構 (IF, ID, EX, MEM, WB)", content: "..." }
-  ],
-  formulas: [
-    { name: "管線化加速比上限", formula: "\\\\text{Speedup} \\\\le \\\\text{Pipeline Depth}" }
-  ],
-  dynamicProblems: [
-    {
-      id: "ch4_pipeline_stall",
-      title: "題型 4-1：資料相依 (Data Hazard) 與轉發 (Forwarding) 週期分析",
-      category: "管線化相依分析",
-      generator: function() { return { stalls: 2 }; },
-      render: function(p) { return "計算包含氣泡之總週期數..."; },
-      solve: function(p) { return { correctValue: 12, unit: "cycles", explanation: "推導過程..." }; }
-    }
-  ]
-});</code></pre>
-      </div>
-
-      <div class="guide-step">
-        <h4>步驟二：在 <code>index.html</code> 中引入該腳本</h4>
-        <pre><code>&lt;!-- 在 index.html 的 script 區段加入新檔案即可 --&gt;
-&lt;script src="js/data/chapter1.js"&gt;&lt;/script&gt;
-&lt;script src="js/data/chapter2.js"&gt;&lt;/script&gt;
-&lt;script src="js/data/chapter3.js"&gt;&lt;/script&gt;
-&lt;script src="js/data/chapter4.js"&gt;&lt;/script&gt; &lt;!-- 新增此行 --&gt;</code></pre>
-      </div>
-
-      <div class="pitfall-callout" style="background: var(--primary-light); border-left-color: var(--primary);">
-        <div class="pitfall-title" style="color: var(--primary);">全自動動態適配機制</div>
-        系統會自動將新章節整合至：<strong>導航篩選按鈕</strong>、<strong>重點公式總覽</strong>、<strong>動態出題引擎</strong> 與 <strong>全真模擬隨機測驗抽題庫</strong>，擴充工作在數分鐘內即可完成。
-      </div>
-    </div>
-  `;
-}
 
 // 9. 互動式 1 位元 ALU 訊號模擬器產生器
 function getAluSimulatorHtml() {
@@ -1447,10 +1823,10 @@ function renderTeacherCuratedArena() {
         <div>
           <h2 class="card-title" style="color: var(--primary);">老師指定勾選習題動態變種專區 (Curated Exercise Variants)</h2>
           <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
-            精確對齊 Chapter 3 老師指定勾選之 7 大核心習題（3.12、3.13、3.18、3.29、3.35、3.36、3.37）。每題皆支援<strong>隨機動態數值生成</strong>與<strong>完整週期追蹤詳解</strong>。
+            精確對齊 Chapter 3 老師指定勾選之 8 大核心習題（3.12、3.13、3.18、3.27、3.29、3.35、3.36、3.37）。每題皆支援<strong>隨機動態數值生成</strong>與<strong>完整週期追蹤詳解</strong>。
           </div>
         </div>
-        <span class="tag-badge badge-primary">老師指定 7 大真題</span>
+        <span class="tag-badge badge-primary">老師指定 8 大真題</span>
       </div>
       <div style="margin-top: 1rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-muted); background: var(--bg-secondary); padding: 1rem 1.25rem; border-radius: var(--radius);">
         <strong>動態變種練習指南：</strong>
@@ -1514,13 +1890,16 @@ function renderTeacherCuratedArena() {
       const solContent = card.querySelector(".solution-content");
       const toggleArrow = card.querySelector(".toggle-arrow");
 
-      btnReroll.addEventListener("click", () => {
-        instance = window.CO_SOLVER.instantiateQuestion(exDef);
-        renderCardContent();
-        window.CO_SOLVER.renderMath(card);
-      });
+      if (btnReroll) {
+        btnReroll.addEventListener("click", () => {
+          instance = window.CO_SOLVER.instantiateQuestion(exDef);
+          renderCardContent();
+          window.CO_SOLVER.renderMath(card);
+        });
+      }
 
       const doVerify = () => {
+        if (!inputAns || !feedbackEl) return;
         const val = inputAns.value.trim();
         const res = window.CO_SOLVER.verify(exDef.id, val);
         feedbackEl.style.display = "inline-block";
@@ -1532,19 +1911,23 @@ function renderTeacherCuratedArena() {
         }
       };
 
-      btnSubmit.addEventListener("click", doVerify);
-      inputAns.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") doVerify();
-      });
+      if (btnSubmit) btnSubmit.addEventListener("click", doVerify);
+      if (inputAns) {
+        inputAns.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") doVerify();
+        });
+      }
 
-      solToggle.addEventListener("click", () => {
-        const isOpen = solContent.style.display === "block";
-        solContent.style.display = isOpen ? "none" : "block";
-        toggleArrow.textContent = isOpen ? "▼" : "▲";
-        if (!isOpen) {
-          window.CO_SOLVER.renderMath(solContent);
-        }
-      });
+      if (solToggle && solContent) {
+        solToggle.addEventListener("click", () => {
+          const isOpen = solContent.style.display === "block";
+          solContent.style.display = isOpen ? "none" : "block";
+          if (toggleArrow) toggleArrow.textContent = isOpen ? "▼" : "▲";
+          if (!isOpen) {
+            window.CO_SOLVER.renderMath(solContent);
+          }
+        });
+      }
     };
 
     renderCardContent();

@@ -317,21 +317,31 @@ $$\\text{Speedup} = \\frac{T_{\\text{old}}}{T_{\\text{new}}} = \\frac{1}{(1 - f)
       title: "題型 1-6：半導體製程微縮與電晶體倍增週期計算",
       category: "半導體指標分析",
       generator: function() {
-        const t2010 = 32; // nm
-        const t2019 = 14; // nm
-        return { t2010, t2019 };
+        const pool = [
+          { y1: 2010, y2: 2019, t1: 32, t2: 14 },
+          { y1: 2012, y2: 2020, t1: 28, t2: 10 },
+          { y1: 2014, y2: 2022, t1: 20, t2: 7 },
+          { y1: 2016, y2: 2024, t1: 16, t2: 5 }
+        ];
+        const item = pool[Math.floor(Math.random() * pool.length)];
+        return {
+          t2010: item.t1,
+          t2019: item.t2,
+          yStart: item.y1,
+          yEnd: item.y2,
+          years: item.y2 - item.y1
+        };
       },
       render: function(p) {
         return `對齊作業 Assignment 1 第 1 題：
 在晶粒面積（Die Size）維持恆定假設下，電晶體數量與最小特徵尺寸 $t$ 的關係為 $\\text{Transistor Count} \\propto \\left(\\frac{1}{t}\\right)^2$。
-已知 Intel 處理器於 2010 年之製程特徵尺寸為 **${p.t2010} nm**，於 2019 年微縮至 **${p.t2019} nm**。
+已知微處理器於 **${p.yStart} 年** 之製程特徵尺寸為 **${p.t2010} nm**，於 **${p.yEnd} 年** 微縮至 **${p.t2019} nm**（歷時 **${p.years} 年**）。
 
-**請計算：電晶體數量在 2010 至 2019 年（歷經 9 年）的年複合增長率（CAGR）為多少百分比（%）？**（四捨五入取至小數點後兩位，例如 20.15% 請填寫 20.15）`;
+**請計算：電晶體數量在此 ${p.years} 年間的年複合增長率（CAGR）為多少百分比（%）？**（四捨五入取至小數點後兩位，例如 20.15% 請填寫 20.15）`;
       },
       solve: function(p) {
-        // Transistor ratio = (t2010 / t2019)^2 = (32 / 14)^2
         const ratio = Math.pow(p.t2010 / p.t2019, 2);
-        const cagr = Math.pow(ratio, 1 / 9) - 1;
+        const cagr = Math.pow(ratio, 1 / p.years) - 1;
         const pct = parseFloat((cagr * 100).toFixed(2));
         const doublingTime = Math.log(2) / Math.log(1 + cagr);
 
@@ -341,9 +351,9 @@ $$\\text{Speedup} = \\frac{T_{\\text{old}}}{T_{\\text{new}}} = \\frac{1}{(1 - f)
           tolerance: 0.2,
           explanation: `
 1. **電晶體增長倍率**：
-   $$\\frac{\\text{Transistors}_{2019}}{\\text{Transistors}_{2010}} = \\left( \\frac{t_{2010}}{t_{2019}} \\right)^2 = \\left( \\frac{${p.t2010}}{${p.t2019}} \\right)^2 = (${(p.t2010/p.t2019).toFixed(3)})^2 = ${ratio.toFixed(3)}$$
-2. **計算 9 年間年複合增長率 (CAGR)**：
-   $$\\text{CAGR} = (${ratio.toFixed(3)})^{\\frac{1}{9}} - 1 = ${(1+cagr).toFixed(4)} - 1 = ${pct}\\%$$
+   $$\\frac{\\text{Transistors}_{${p.yEnd}}}{\\text{Transistors}_{${p.yStart}}} = \\left( \\frac{t_{${p.yStart}}}{t_{${p.yEnd}}} \\right)^2 = \\left( \\frac{${p.t2010}}{${p.t2019}} \\right)^2 = (${(p.t2010/p.t2019).toFixed(3)})^2 = ${ratio.toFixed(3)}$$
+2. **計算 ${p.years} 年間年複合增長率 (CAGR)**：
+   $$\\text{CAGR} = (${ratio.toFixed(3)})^{\\frac{1}{${p.years}}} - 1 = ${(1+cagr).toFixed(4)} - 1 = ${pct}\\%$$
 3. **倍增時間 (Doubling Time)**：
    $$T_{\\text{double}} = \\frac{\\ln(2)}{\\ln(1 + \\text{CAGR})} = \\frac{0.6931}{${cagr.toFixed(4)}} \\approx ${doublingTime.toFixed(2)}\\text{ 年}$$
           `
@@ -355,15 +365,13 @@ $$\\text{Speedup} = \\frac{T_{\\text{old}}}{T_{\\text{new}}} = \\frac{1}{(1 - f)
       title: "題型 1-7：編譯器指令數、時脈週期與加速比綜合推算【作業一 Q3 必考真題】",
       category: "編譯器效能分析",
       generator: function() {
-        const icA = 1.0; // 1.0E9
-        const timeA = 1.1; // 1.1s
-        const icB = 1.2; // 1.2E9
-        const timeB = 1.5; // 1.5s
-        const cycleTimeNs = 1.0; // 1 ns
-        const icNew = 0.6; // 6.0E8
-        const cpiNew = 1.1;
-
-        return { icA, timeA, icB, timeB, cycleTimeNs, icNew, cpiNew };
+        const pool = [
+          { icA: 1.0, timeA: 1.1, icB: 1.2, timeB: 1.5, cycleTimeNs: 1.0, icNew: 0.6, cpiNew: 1.1 },
+          { icA: 1.2, timeA: 1.4, icB: 1.5, timeB: 1.8, cycleTimeNs: 0.8, icNew: 0.7, cpiNew: 1.2 },
+          { icA: 0.8, timeA: 0.9, icB: 1.0, timeB: 1.3, cycleTimeNs: 1.0, icNew: 0.5, cpiNew: 1.0 },
+          { icA: 1.5, timeA: 1.8, icB: 1.6, timeB: 2.0, cycleTimeNs: 1.2, icNew: 0.9, cpiNew: 1.1 }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
       },
       render: function(p) {
         return `對齊作業 Assignment 1 第 3 題：

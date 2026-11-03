@@ -186,10 +186,14 @@ MIPS 擁有 32 個 32 位元通用暫存器（$0 至 $31）：
       title: "題型 2-3：J-type 偽直接跳躍目標位址（Jump Target Address）解析",
       category: "跳躍位址計算",
       generator: function() {
-        const pc = 0x00400010;
-        const rawTargetWord = 0x00100050; // target instruction address / 4
-        const targetPC = (pc & 0xF0000000) | (rawTargetWord << 2);
-        return { pc, rawTargetWord, targetPC };
+        const pool = [
+          { pc: 0x00400010, rawTargetWord: 0x00100050 },
+          { pc: 0x00401020, rawTargetWord: 0x00100200 },
+          { pc: 0x10000008, rawTargetWord: 0x00200400 },
+          { pc: 0x20000000, rawTargetWord: 0x00400100 },
+          { pc: 0x00402004, rawTargetWord: 0x00100800 }
+        ];
+        return pool[Math.floor(Math.random() * pool.length)];
       },
       render: function(p) {
         return `一條無條件跳躍指令 \`j Target\` 位於記憶體位址 **0x00400010**。

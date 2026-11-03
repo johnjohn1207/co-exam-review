@@ -948,6 +948,51 @@ ${traceMd}
             finalFrac: "1001000110",
             finalHex: "4A46",
             finalDec: 12.6875
+          },
+          {
+            aDec: 18.25,
+            aBin: "+1.0010010000_2 \\times 2^4",
+            aExp: 19,
+            bDec: 0.09375,
+            bBin: "+1.1000000000_2 \\times 2^{-4}",
+            bExp: 11,
+            diffExp: 8,
+            shiftedB: "0.0000000110",
+            grs: "0 0 0",
+            roundAction: "捨去 (Round Down)",
+            finalFrac: "0010010110",
+            finalHex: "4C96",
+            finalDec: 18.34375
+          },
+          {
+            aDec: 8.75,
+            aBin: "+1.0001100000_2 \\times 2^3",
+            aExp: 18,
+            bDec: 0.28125,
+            bBin: "+1.0010000000_2 \\times 2^{-2}",
+            bExp: 13,
+            diffExp: 5,
+            shiftedB: "0.0000100100",
+            grs: "0 0 0",
+            roundAction: "捨去 (Round Down)",
+            finalFrac: "0010000100",
+            finalHex: "4884",
+            finalDec: 9.03125
+          },
+          {
+            aDec: 15.5,
+            aBin: "+1.1111000000_2 \\times 2^3",
+            aExp: 18,
+            bDec: 0.34375,
+            bBin: "+1.0110000000_2 \\times 2^{-2}",
+            bExp: 13,
+            diffExp: 5,
+            shiftedB: "0.0000101100",
+            grs: "0 0 0",
+            roundAction: "捨去 (Round Down)",
+            finalFrac: "1111101100",
+            finalHex: "4BEE",
+            finalDec: 15.84375
           }
         ];
         return pool[Math.floor(Math.random() * pool.length)];
@@ -992,26 +1037,47 @@ ${traceMd}
       generator: function() {
         const pool = [
           {
-            caseA: "(A × B) × C",
-            caseB: "A × (B × C)",
-            descA: "在計算 (A × B) 時，指數相加 (-9) + (-8) = -17，低於半精度最小規格化指數上限 (-14)，引發指數下溢（Underflow），硬體截斷為 0，最終 0 × C = 0",
-            descB: "在計算 A × (B × C) 時，先乘較大數，中間指數維持在 -1，再乘以 A 指數為 -9，未發生下溢，成功保留有效位數得 2.2907 × 10^-3",
-            isEqual: "否",
+            aStr: "3.41796875 \\times 10^{-3} = 1.75 \\times 2^{-9}",
+            bStr: "6.34765625 \\times 10^{-3} = 1.625 \\times 2^{-8}",
+            cStr: "1.05625 \\times 10^2 = 1.650390625 \\times 2^6",
+            ea: -9, eb: -8, ec: 6,
+            underflowCase: "(A × B)",
+            preservedCase: "A × (B × C)",
+            aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+          },
+          {
+            aStr: "1.5 \\times 2^{-10}",
+            bStr: "1.25 \\times 2^{-7}",
+            cStr: "1.75 \\times 2^5",
+            ea: -10, eb: -7, ec: 5,
+            underflowCase: "(A × B)",
+            preservedCase: "A × (B × C)",
+            aliases: ["否", "不成立", "false", "no", "0", "不相等"]
+          },
+          {
+            aStr: "1.125 \\times 2^{-8}",
+            bStr: "1.5 \\times 2^{-8}",
+            cStr: "1.25 \\times 2^7",
+            ea: -8, eb: -8, ec: 7,
+            underflowCase: "(A × B)",
+            preservedCase: "A × (B × C)",
             aliases: ["否", "不成立", "false", "no", "0", "不相等"]
           }
         ];
-        return pool[0];
+        return pool[Math.floor(Math.random() * pool.length)];
       },
       render: function(p) {
         return `依據課後習題 3.35、3.36 與 3.37 之深入探討：
-在 16 位元半精度浮點數硬體架構下，給定三個數值：
-- $A = 3.41796875 \\times 10^{-3} = 1.75 \\times 2^{-9}$
-- $B = 6.34765625 \\times 10^{-3} = 1.625 \\times 2^{-8}$
-- $C = 1.05625 \\times 10^2 = 1.650390625 \\times 2^6$
+在 16 位元半精度浮點數硬體架構下（Bias = 15，最小正規化指數門檻為 -14），給定三個數值：
+- $A = ${p.aStr}$
+- $B = ${p.bStr}$
+- $C = ${p.cStr}$
 
-**請判定：運算式 $(A \\times B) \\times C = A \\times (B \\times C)$ 在浮點數電腦系統中是否恆成立？**（請回答：\`是\` 或 \`否\`）`;
+**請判定：運算式 $(A \\times B) \\times C = A \\times (B \\times C)$ 在有限精確度之浮點數電腦硬體中是否恆成立？**（請回答：\`是\` 或 \`否\`）`;
       },
       solve: function(p) {
+        const sumExpAB = p.ea + p.eb;
+        const sumExpBC = p.eb + p.ec;
         return {
           correctValue: "否",
           altValue: p.aliases,
@@ -1019,16 +1085,15 @@ ${traceMd}
           tolerance: 0,
           explanation: `
 1. **核心原則**：浮點數電腦運算**不滿足結合律（Floating-point arithmetic is NOT associative）**！
-2. **第一種計算順序 $(A \\times B) \\times C$（習題 3.35）**：
-   - 先算 $A \\times B$：指數相加 $(-9) + (-8) = -17$。
+2. **第一種計算順序 $(A \\times B) \\times C$**：
+   - 先算 $A \\times B$：指數相加 $(${p.ea}) + (${p.eb}) = ${sumExpAB}$。
    - 由於 16 位元半精度規格化數的真實指數最小為 $1 - 15 = -14$。
-   - 指數 $-17 < -14$，發生**指數下溢（Exponent Underflow）**，數值歸零為 0。
+   - 指數 $${sumExpAB} < -14$，發生**指數下溢（Exponent Underflow）**，數值歸零為 0。
    - 接著計算 $0 \\times C = 0$。
-3. **第二種計算順序 $A \\times (B \\times C)$（習題 3.36）**：
-   - 先算 $B \\times C$：指數相加 $(-8) + 6 = -2$（在合法範圍內）。
-   - 再乘以 $A$：指數相加 $(-2) + (-9) + 1 = -9$（在合法範圍內）。
-   - 全程皆在規格化數之表示範圍內，得到非零精確結果 $\\approx 2.2907 \\times 10^{-3}$。
-4. **結論**：兩者結果一為 $0$，一為 $2.2907 \\times 10^{-3}$，等式**不成立**。
+3. **第二種計算順序 $A \\times (B \\times C)$**：
+   - 先算 $B \\times C$：指數相加 $(${p.eb}) + (${p.ec}) = ${sumExpBC}$（在合法範圍內）。
+   - 再乘以 $A$：指數在合法範圍內，成功保留有效位數，結果非零。
+4. **結論**：兩者結果完全不同，等式**不成立**。
           `
         };
       }
@@ -1057,6 +1122,39 @@ ${traceMd}
             prodDec: 407,
             prodBin12: "000110010111",
             prodOct: "627",
+            fig33Shift: "被乘數向左位移、乘數向右位移",
+            fig35Shift: "乘積暫存器整組向右位移",
+            cycles: 6
+          },
+          {
+            mOct: "33", qOct: "16",
+            mDec: 27, qDec: 14,
+            bits: 6,
+            prodDec: 378,
+            prodBin12: "000101111010",
+            prodOct: "572",
+            fig33Shift: "被乘數向左位移、乘數向右位移",
+            fig35Shift: "乘積暫存器整組向右位移",
+            cycles: 6
+          },
+          {
+            mOct: "52", qOct: "11",
+            mDec: 42, qDec: 9,
+            bits: 6,
+            prodDec: 378,
+            prodBin12: "000101111010",
+            prodOct: "572",
+            fig33Shift: "被乘數向左位移、乘數向右位移",
+            fig35Shift: "乘積暫存器整組向右位移",
+            cycles: 6
+          },
+          {
+            mOct: "37", qOct: "15",
+            mDec: 31, qDec: 13,
+            bits: 6,
+            prodDec: 403,
+            prodBin12: "000110010011",
+            prodOct: "623",
             fig33Shift: "被乘數向左位移、乘數向右位移",
             fig35Shift: "乘積暫存器整組向右位移",
             cycles: 6
@@ -1109,6 +1207,27 @@ ${traceMd}
             quotient: 3, remainder: 11,
             rounds: 8,
             modeDesc: "純十進位情境 (74 ÷ 21)"
+          },
+          {
+            dividend: 55, divisor: 13,
+            divOctA: "67", divOctB: "15",
+            quotient: 4, remainder: 3,
+            rounds: 7,
+            modeDesc: "十進位情境 (55 ÷ 13)"
+          },
+          {
+            dividend: 47, divisor: 15,
+            divOctA: "57", divOctB: "17",
+            quotient: 3, remainder: 2,
+            rounds: 7,
+            modeDesc: "十進位情境 (47 ÷ 15)"
+          },
+          {
+            dividend: 58, divisor: 14,
+            divOctA: "72", divOctB: "16",
+            quotient: 4, remainder: 2,
+            rounds: 7,
+            modeDesc: "十進位情境 (58 ÷ 14)"
           }
         ];
         return pool[Math.floor(Math.random() * pool.length)];
